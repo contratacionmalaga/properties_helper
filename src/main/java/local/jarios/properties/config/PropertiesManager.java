@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
  * @author Juan Antonio
  * @version 1.0
  * @since 2024-06-04
- */
+  */
 @Slf4j
 public class PropertiesManager {
 
