@@ -64,10 +64,9 @@ public class PropertiesManager {
 
     /**
      * Conjunto de claves consideradas sensibles y que deben ser ocultadas.
+     * Ahora es un campo de instancia para poder configurarlo desde fuera.
      */
-    private static final Set<String> SENSITIVE_KEYS = Set.of(
-            "password", "secret", "key", "token"
-    );
+    private Set<String> sensitiveKeys = Collections.emptySet();
 
     /**
      * Constructor privado para patrón Singleton.
@@ -84,6 +83,21 @@ public class PropertiesManager {
      */
     public static PropertiesManager getInstance() {
         return INSTANCE;
+    }
+
+    /**
+     * Permite establecer las claves sensibles que deben ser ocultadas.
+     * Se puede llamar tras obtener la instancia.
+     *
+     * @param keys conjunto de claves sensibles
+     */
+    public void setSensitiveKeys(Set<String> keys) {
+        if (keys == null) {
+            this.sensitiveKeys = Collections.emptySet();
+        } else {
+            this.sensitiveKeys = Collections.unmodifiableSet(new HashSet<>(keys));
+        }
+        log.info("[setSensitiveKeys] Claves sensibles configuradas: {}", this.sensitiveKeys);
     }
 
     /**
@@ -224,6 +238,7 @@ public class PropertiesManager {
             throw new PropertiesLoadException(msg);
         }
 
+        log.info(">>> {}", fileNameWithoutExtension + PROPERTIES_EXT);
         props.forEach((key, value) -> {
             String val = isSensitiveKey(key.toString()) ? KEY_SENSITIVE_VALUE : value.toString();
             log.info("{} = {}", key, val);
@@ -291,8 +306,15 @@ public class PropertiesManager {
      * @return {@code true} si la clave es sensible; {@code false} en otro caso
      */
     private boolean isSensitiveKey(String key) {
-        return SENSITIVE_KEYS.stream()
-                .anyMatch(sensitive -> key.toLowerCase(Locale.ROOT).contains(sensitive.toLowerCase(Locale.ROOT)));
+        String keyLower = key.toLowerCase(Locale.ROOT);
+        for (String sensitive : sensitiveKeys) {
+            log.debug("[isSensitiveKey] Comprobando '{}' contra '{}'", keyLower, sensitive.toLowerCase(Locale.ROOT));
+            if (keyLower.contains(sensitive.toLowerCase(Locale.ROOT))) {
+                log.debug("[isSensitiveKey] La clave '{}' es considerada sensible.", key);
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
