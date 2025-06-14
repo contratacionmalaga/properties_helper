@@ -66,7 +66,7 @@ public class PropertiesManager {
      * Conjunto de claves consideradas sensibles y que deben ser ocultadas.
      */
     private static final Set<String> SENSITIVE_KEYS = Set.of(
-            "password", "secret", "api.key", "token", "accessKey", "privateKey"
+            "password", "secret", "key", "token"
     );
 
     /**
