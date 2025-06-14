@@ -1,9 +1,0 @@
-
-•
-java:S3242"MUse 'java.lang.Throwable' here; it is a more general type than 'IOException'.(ƒàœ’úÿÿÿÿ8Èÿ‘¯€2J$40c86b06-a5cc-4fd4-9c52-f298b20fc7e5
-—
-java:S3242"TUse 'java.lang.Throwable' here; it is a more general type than 'URISyntaxException'.(ä¦ªÛ8îÍ¿á€2J$0624ccee-d2db-45fa-a32a-7b07effae53a
-
-java:S3242%"VUse 'java.lang.Throwable' here; it is a more general type than 'UnknownHostException'.(À†‘Õıÿÿÿÿ8ë˜—¯€2J$9ca30896-acc3-4a24-b640-d3e66441070d
-’
-java:S3242:"OUse 'java.lang.Throwable' here; it is a more general type than 'JAXBException'.(„úİ†8–¹şˆ2J$3757f148-89d9-4d14-b40b-36530b140cf0
