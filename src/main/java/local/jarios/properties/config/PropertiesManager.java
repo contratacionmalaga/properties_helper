@@ -215,7 +215,8 @@ public class PropertiesManager {
     public void printProperties(String fileNameWithoutExtension) {
         Properties props = propertiesMap.get(fileNameWithoutExtension);
         if (props == null) {
-            throw new PropertiesLoadException("No se encontró el fichero: " + fileNameWithoutExtension + PROPERTIES_EXT);
+            String msg = String.format("No se encontró el fichero: %s", fileNameWithoutExtension + PROPERTIES_EXT);
+            throw new PropertiesLoadException(msg);
         }
 
         props.forEach((key, value) -> {
