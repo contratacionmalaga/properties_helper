@@ -2,6 +2,7 @@ package local.jarios;
 
 import local.jarios.properties.config.PropertiesManager;
 import local.jarios.properties.exception.PropertiesLoadException;
+import local.jarios.utils.Mensajes;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Set;
@@ -40,6 +41,9 @@ public class PruebaProperties {
      * @param args argumentos de línea de comando (no usados)
      */
     public static void main(String[] args) {
+
+        log.info(Mensajes.INICIO);
+
         try {
             // Obtener instancia Singleton
             PropertiesManager manager = PropertiesManager.getInstance();
@@ -97,7 +101,12 @@ public class PruebaProperties {
             log.info("Recarga completada.");
 
         } catch (PropertiesLoadException ex) {
+
             log.error("[ERROR] {}", ex.getMessage(), ex);
+
+        } finally {
+
+            log.info(Mensajes.FINAL);
         }
     }
 }

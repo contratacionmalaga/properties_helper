@@ -95,9 +95,9 @@ public class PropertiesManager {
         if (keys == null) {
             this.sensitiveKeys = Collections.emptySet();
         } else {
-            this.sensitiveKeys = Collections.unmodifiableSet(new HashSet<>(keys));
+            this.sensitiveKeys = Set.copyOf(keys);
         }
-        log.info("[setSensitiveKeys] Claves sensibles configuradas: {}", this.sensitiveKeys);
+        log.debug("[setSensitiveKeys] Claves sensibles configuradas: {}", this.sensitiveKeys);
     }
 
     /**
@@ -130,7 +130,7 @@ public class PropertiesManager {
         }
 
         this.propertiesMap = Collections.unmodifiableMap(tempMap);
-        log.info("Cargados {} ficheros .properties", propertiesMap.size());
+        log.debug("Cargados {} ficheros .properties", propertiesMap.size());
 
     }
 
@@ -148,7 +148,7 @@ public class PropertiesManager {
             Properties props = new Properties();
             props.load(fis);
             long duration = System.nanoTime() - start;
-            log.info("[loadPropertiesFromFile] Cargado fichero '{}' con {} claves en {} ms",
+            log.debug("[loadPropertiesFromFile] Cargado fichero '{}' con {} claves en {} ms",
                     file.getName(), props.size(), duration / 1_000_000);
             return props;
         } catch (IOException e) {
