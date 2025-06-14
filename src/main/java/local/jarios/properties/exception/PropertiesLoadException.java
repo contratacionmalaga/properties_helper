@@ -1,4 +1,4 @@
-package local.jarios.property.exception;
+package local.jarios.properties.exception;
 
 /**
  * Description:

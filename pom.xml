@@ -2,30 +2,30 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>local.jarios</groupId>
-    <artifactId>import-from-gc</artifactId>
-    <version>1.0.1</version>
+    <artifactId>properties-helper</artifactId>
+    <version>1.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>ImportFromOpendata</name>
-    <description>Cliente que parsea los datos abiertos de la Plataforma de Contratación del Sector Público</description>
+    <name>properties-helper</name>
+    <description>Gestión avanzada de ficheros properties</description>
 
     <scm>
-        <connection>scm:git:https://github.com/contratacionmalaga/ImportFromGc.git</connection>
-        <developerConnection>scm:git:git@github.com:contratacionmalaga/ImportFromGc.git</developerConnection>
-        <url>https://github.com/contratacionmalaga/ImportFromGc</url>
-        <tag>v1.0.1</tag>
+        <connection>scm:git:https://github.com/contratacionmalaga/properties-helper.git</connection>
+        <developerConnection>scm:git:git@github.com:contratacionmalaga/properties-helper.git</developerConnection>
+        <url>https://github.com/contratacionmalaga/properties-helper</url>
+        <tag>HEAD</tag>
     </scm>
 
     <distributionManagement>
         <repository>
             <id>github-releases</id>
             <!-- Cambié la URL a la correcta para GitHub Packages -->
-            <url>https://maven.pkg.github.com/contratacionmalaga/ImportFromGc</url>
+            <url>https://maven.pkg.github.com/contratacionmalaga/properties-helper</url>
         </repository>
         <snapshotRepository>
             <id>github-snapshots</id>
             <!-- Cambié la URL a la correcta para GitHub Packages -->
-            <url>https://maven.pkg.github.com/contratacionmalaga/ImportFromGc</url>
+            <url>https://maven.pkg.github.com/contratacionmalaga/properties-helper</url>
         </snapshotRepository>
     </distributionManagement>
 
@@ -33,50 +33,11 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
-        <exec.mainClass>local.jarios.ImportFromGc</exec.mainClass>
+        <exec.mainClass>local.jarios.properties-helper</exec.mainClass>
         <jackson.version>2.19.0</jackson.version>
     </properties>
 
     <dependencies>
-        <!-- Fichero JAXB -->
-
-        <dependency>
-            <groupId>com.sun.xml.bind</groupId>
-            <artifactId>jaxb-core</artifactId>
-            <version>2.3.0.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.sun.xml.bind</groupId>
-            <artifactId>jaxb-impl</artifactId>
-            <version>2.3.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>javax.xml.bind</groupId>
-            <artifactId>jaxb-api</artifactId>
-            <version>2.4.0-b180830.0359</version>
-        </dependency>
-
-        <dependency>
-            <groupId>javax.activation</groupId>
-            <artifactId>javax.activation-api</artifactId>
-            <version>1.2.0</version>
-        </dependency>
-
-        <!-- Hibernate dependencies -->
-        <dependency>
-            <groupId>org.hibernate.orm</groupId>
-            <artifactId>hibernate-core</artifactId>
-            <version>7.0.0.Final</version>
-        </dependency>
-
-        <!-- https://mvnrepository.com/artifact/org.hibernate.orm/hibernate-hikaricp -->
-        <dependency>
-            <groupId>org.hibernate.orm</groupId>
-            <artifactId>hibernate-hikaricp</artifactId>
-            <version>7.0.0.Final</version>
-        </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.projectlombok/lombok -->
         <dependency>
@@ -100,7 +61,6 @@
             <version>2.24.3</version>
         </dependency>
 
-
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
@@ -113,71 +73,52 @@
             <version>2.24.3</version>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/com.google.code.gson/gson -->
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>2.13.1</version>
-        </dependency>
-
-        <!-- https://mvnrepository.com/artifact/jakarta.mail/jakarta.mail-api -->
-        <dependency>
-            <groupId>jakarta.mail</groupId>
-            <artifactId>jakarta.mail-api</artifactId>
-            <version>2.1.3</version>
-        </dependency>
-
-        <dependency>
-            <groupId>jakarta.activation</groupId>
-            <artifactId>jakarta.activation-api</artifactId>
-            <version>2.1.3</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.eclipse.angus</groupId>
-            <artifactId>angus-mail</artifactId>
-            <version>2.0.3</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.reflections</groupId>
-            <artifactId>reflections</artifactId>
-            <version>0.10.2</version>
-        </dependency>
-
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>${jackson.version}</version>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/org.mariadb.jdbc/mariadb-java-client -->
+        <!-- Dependencias para JUnit 5 -->
         <dependency>
-            <groupId>org.mariadb.jdbc</groupId>
-            <artifactId>mariadb-java-client</artifactId>
-            <version>3.5.3</version>
-        </dependency>
-
-        <!-- https://mvnrepository.com/artifact/com.zaxxer/HikariCP -->
-        <dependency>
-            <groupId>com.zaxxer</groupId>
-            <artifactId>HikariCP</artifactId>
-            <version>6.3.0</version>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>5.13.1</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
-            <groupId>com.fasterxml.uuid</groupId>
-            <artifactId>java-uuid-generator</artifactId>
-            <version>5.1.0</version>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>5.13.1</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- AssertJ (opcional, para aserciones más expresivas) -->
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>4.0.0-M1</version>
+            <scope>test</scope>
         </dependency>
 
     </dependencies>
 
     <build>
 
-        <finalName>import-from-gc</finalName>
+        <finalName>properties-helper</finalName>
 
         <plugins>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+                <configuration>
+                    <useModulePath>false</useModulePath> <!-- importante si usas Java 9+ con módulos -->
+                </configuration>
+            </plugin>
+
             <plugin>
                 <groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
@@ -267,6 +208,7 @@
                 <configuration>
                     <source>21</source>
                     <target>21</target>
+                    <compilerArgs>--enable-preview</compilerArgs>
                 </configuration>
             </plugin>
 
@@ -278,7 +220,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>local.jarios.ImportFromGc</mainClass>
+                            <mainClass>local.jarios.properties-helper</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>

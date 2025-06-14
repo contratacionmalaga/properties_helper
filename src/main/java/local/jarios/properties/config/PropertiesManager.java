@@ -1,7 +1,8 @@
-package local.jarios.property.config;
+package local.jarios.properties.config;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import local.jarios.property.exception.PropertiesLoadException;
+import local.jarios.properties.exception.PropertiesLoadException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
@@ -9,16 +10,23 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * PropertiesManager: carga, gestión y exportación de ficheros .properties desde
- * carpeta externa o classpath. Singleton thread-safe.
+ * Gestión y carga centralizada de ficheros .properties desde carpeta externa o classpath.
+ * <p>
+ * Implementa patrón Singleton thread-safe para acceso global.
+ * <p>
+ * Funcionalidades principales:
+ * <ul>
+ *   <li>Carga de múltiples ficheros .properties con fallback a recursos JAR.</li>
+ *   <li>Inmutabilidad de las propiedades para evitar modificaciones accidentales.</li>
+ *   <li>Ocultamiento de claves sensibles en impresión y exportación.</li>
+ *   <li>Exportación a JSON de un fichero o todos.</li>
+ *   <li>Validación de claves requeridas en un fichero.</li>
+ *   <li>Recarga segura y sincronizada de propiedades.</li>
+ * </ul>
  *
- * Mejoras:
- * - Inmutabilidad del mapa y Properties para evitar modificaciones.
- * - Ocultamiento de claves sensibles en impresión/exportación.
- * - Carga fallback desde recursos JAR si no existe carpeta externa.
- * - Exportación JSON de un fichero o todos.
- * - Validación de claves obligatorias.
- * - Recarga segura.
+ * @author Juan Antonio
+ * @version 1.0
+ * @since 2024-06-04
  */
 @Slf4j
 public class PropertiesManager {
@@ -66,7 +74,6 @@ public class PropertiesManager {
     /**
      * Carga todas las properties desde carpeta externa o recursos del classpath.
      * Construye un mapa inmutable y properties inmutables para proteger la configuración.
-     *
      * Si no existe la carpeta externa 'config', intenta cargar desde recursos empaquetados.
      *
      * @throws PropertiesLoadException si ocurre un error al leer cualquier fichero.
@@ -88,10 +95,9 @@ public class PropertiesManager {
             // Lista fija de recursos para cargar desde JAR (puedes modificar o parametrizar)
             List<String> resourcesToLoad = List.of("app.properties", "db.properties");
             for (String resourceName : resourcesToLoad) {
-                Properties props = loadPropertiesFromResource(CONFIG_DIR + "/" + resourceName);
-                if (props != null) {
-                    tempMap.put(stripExtension(resourceName), makeImmutable(props));
-                }
+
+                Optional.of(loadPropertiesFromResource(String.format("%s/%s", CONFIG_DIR, resourceName)))
+                        .ifPresent(props -> tempMap.put(stripExtension(resourceName), makeImmutable(props)));
             }
         }
 
@@ -114,7 +120,9 @@ public class PropertiesManager {
             log.debug("Cargado archivo externo: {}", file.getAbsolutePath());
             return props;
         } catch (IOException e) {
-            throw new PropertiesLoadException("Error leyendo el archivo: " + file.getName(), e);
+            String msg = String.format("Error leyendo el archivo: %s", file.getName());
+            log.error(msg, e);
+            throw new PropertiesLoadException(msg, e);
         }
     }
 
@@ -129,14 +137,16 @@ public class PropertiesManager {
         try (InputStream is = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
             if (is == null) {
                 log.warn("Recurso '{}' no encontrado en classpath.", resourcePath);
-                return null;
+                return new Properties();
             }
             Properties props = new Properties();
             props.load(is);
             log.debug("Cargado recurso JAR: {}", resourcePath);
             return props;
         } catch (IOException e) {
-            throw new PropertiesLoadException("Error leyendo recurso: " + resourcePath, e);
+            String msg = String.format("Error leyendo recurso: %s", resourcePath);
+            log.error(msg, e);
+            throw new PropertiesLoadException(msg, e);
         }
     }
 
@@ -163,7 +173,7 @@ public class PropertiesManager {
                 throw new UnsupportedOperationException("Propiedades inmutables");
             }
         };
-        original.forEach(copy::put);
+        copy.putAll(original);
         return copy;
     }
 
@@ -227,7 +237,7 @@ public class PropertiesManager {
      */
     public Properties getProperties(String fileNameWithoutExtension) {
         Properties props = propertiesMap.get(fileNameWithoutExtension);
-        if (props == null) return null;
+        if (props == null) return new Properties();
 
         return makeImmutable(props);
     }
@@ -295,8 +305,10 @@ public class PropertiesManager {
                 ));
         try {
             return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(safeMap);
-        } catch (Exception e) {
-            throw new PropertiesLoadException("Error exportando a JSON", e);
+        } catch (JsonProcessingException e) {
+            String msg = "Error exportando a JSON";
+            log.error(msg, e);
+            throw new PropertiesLoadException(msg, e);
         }
     }
 
@@ -321,8 +333,10 @@ public class PropertiesManager {
         });
         try {
             return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(allSafeProps);
-        } catch (Exception e) {
-            throw new PropertiesLoadException("Error exportando todo a JSON", e);
+        } catch (JsonProcessingException e) {
+            String msg = "Error exportando todo a JSON";
+            log.error(msg, e);
+            throw new PropertiesLoadException(msg, e);
         }
     }
 
@@ -337,11 +351,15 @@ public class PropertiesManager {
     public void validateRequiredKeys(String fileName, Set<String> requiredKeys) {
         Properties props = propertiesMap.get(fileName);
         if (props == null) {
-            throw new PropertiesLoadException("No se encontró el fichero: " + fileName + PROPERTIES_EXT);
+            String msg = String.format("No se encontró el fichero: %s%s", fileName, PROPERTIES_EXT);
+            log.error(msg);
+            throw new PropertiesLoadException(msg);
         }
         for (String key : requiredKeys) {
             if (!props.containsKey(key)) {
-                throw new PropertiesLoadException("Clave requerida faltante: " + key + " en " + fileName + PROPERTIES_EXT);
+                String msg = String.format("Clave requerida faltante: %s en %s%s", key, fileName, PROPERTIES_EXT);
+                log.error(msg);
+                throw new PropertiesLoadException(msg);
             }
         }
     }
@@ -349,7 +367,6 @@ public class PropertiesManager {
     /**
      * Recarga todas las propiedades desde la carpeta o recursos,
      * reemplazando el mapa actual con uno nuevo e inmutable.
-     *
      * Método sincronizado para evitar problemas concurrentes.
      */
     public synchronized void reload() {

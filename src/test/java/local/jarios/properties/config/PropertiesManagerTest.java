@@ -1,6 +1,6 @@
-package local.jarios.property.config;
+package local.jarios.properties.config;
 
-import local.jarios.property.exception.PropertiesLoadException;
+import local.jarios.properties.exception.PropertiesLoadException;
 import org.junit.jupiter.api.*;
 
 import java.util.Properties;

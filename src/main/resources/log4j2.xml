@@ -11,60 +11,9 @@
         <File name="File" fileName="logs/local-log4j2-${date:yyyy-MM-dd_HH-mm-ss}-log.log">
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p [%t] %-25c{1}:%-4L - %m%n" />
         </File>
-
-        <!-- Registro generado por Hibernate -->
-        <File name="FileHibernate" fileName="logs/local-log4j2-${date:yyyy-MM-dd_HH-mm-ss}-hibernate.log">
-            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p [%t] %-25c{1}:%-4L - %m%n" />
-        </File>
-
-        <!-- Registro generado por Hibernate -->
-        <File name="FilePersistence" fileName="logs/local-log4j2-${date:yyyy-MM-dd_HH-mm-ss}-hibernate-persistence.log">
-            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p [%t] %-25c{1}:%-4L - %m%n" />
-        </File>
-
-        <!-- Registro generado por Hibernate -->
-        <File name="FileHibernateSQL" fileName="logs/local-log4j2-${date:yyyy-MM-dd_HH-mm-ss}-hibernate-sql.log">
-            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p [%t] %-25c{1}:%-4L - %m%n" />
-        </File>
-
-        <!-- Registro generado por Reflections para obtener las entidades gestionadas por Hibernate -->
-        <File name="FileReflections" fileName="logs/local-log4j2-${date:yyyy-MM-dd_HH-mm-ss}-reflection.log">
-            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p [%t] %-25c{1}:%-4L - %m%n" />
-        </File>
-
-        <!-- -->
-        <File name="FileHikariCP" fileName="logs/local-log4j2-${date:yyyy-MM-dd_HH-mm-ss}-hikaricp.log">
-            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p [%t] %-25c{1}:%-4L - %m%n" />
-        </File>
     </Appenders>
+
     <Loggers>
-
-        <!-- Busqueda de entidades en la ruta seleccionada -->
-        <Logger name="org.reflections.Reflections" level="DEBUG" additivity="false">
-            <AppenderRef ref="FileReflections"/>
-        </Logger>
-
-        <!-- Redirección del log de hibernate. Almacenado en fichero. -->
-        <Logger name="org.hibernate" level="DEBUG" additivity="false">
-            <AppenderRef ref="FileHibernate"/>
-        </Logger>
-
-        <Logger name="javax.persistence" level="DEBUG" additivity="false">
-            <AppenderRef ref="FilePersistence"/>
-        </Logger>
-
-        <Logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
-            <AppenderRef ref="FileHibernateSQL"/>
-        </Logger>
-
-        <!-- Configurar el logger para los logs de HikariCP -->
-        <logger name="com.zaxxer.hikari" level="DEBUG" additivity="false">
-            <AppenderRef ref="FileHikariCP" />
-        </logger>
-
-        <Logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="DEBUG" additivity="false">
-            <AppenderRef ref="FileHibernate"/>
-        </Logger>
 
         <!-- Redirección del log del aplicativo. Por consola y almacenado en fichero. -->
         <Root level="INFO">
