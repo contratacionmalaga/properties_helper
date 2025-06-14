@@ -29,6 +29,11 @@ import java.util.Set;
 public class PruebaProperties {
 
     /**
+     * Constructor privado.
+     */
+    private PruebaProperties() { /*   */}
+
+    /**
      * Punto de entrada de la aplicación.
      * Ejecuta ejemplos de uso completo de {@link PropertiesManager}.
      *
