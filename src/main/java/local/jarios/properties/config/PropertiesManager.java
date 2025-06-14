@@ -31,52 +31,62 @@ import java.util.stream.Collectors;
 @Slf4j
 public class PropertiesManager {
 
+    /**
+     * Instancia única para el patrón Singleton.
+     */
+    private static final PropertiesManager INSTANCE = new PropertiesManager();
+
+    /**
+     * Extensión estándar de ficheros properties.
+     */
     private static final String PROPERTIES_EXT = ".properties";
+
+    /**
+     * Directorio de configuración esperado para ficheros properties.
+     */
     private static final String CONFIG_DIR = "config";
 
-    private static volatile PropertiesManager instance;
-
-    // Mapa inmutable tras carga
+    /**
+     * Mapa inmutable que contiene el conjunto de propiedades cargadas,
+     * donde la clave es el nombre del fichero sin extensión.
+     */
     private Map<String, Properties> propertiesMap;
 
+    /**
+     * Objeto Jackson para serialización JSON.
+     */
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    // Claves sensibles para ocultar
+    /**
+     * Conjunto de claves consideradas sensibles y que deben ser ocultadas.
+     */
     private static final Set<String> SENSITIVE_KEYS = Set.of(
             "password", "secret", "api.key", "token", "accessKey", "privateKey"
     );
 
     /**
      * Constructor privado para patrón Singleton.
-     * Carga todas las properties al inicializar la instancia.
+     * Realiza la carga inicial de todos los ficheros properties.
      */
     private PropertiesManager() {
         loadAllProperties();
     }
 
     /**
-     * Método estático para obtener la instancia única de la clase (Singleton).
-     * Implementa doble verificación para asegurar thread safety.
+     * Obtiene la instancia única de {@code PropertiesManager}.
      *
-     * @return instancia única de PropertiesManager
+     * @return instancia singleton
      */
     public static PropertiesManager getInstance() {
-        if (instance == null) {
-            synchronized (PropertiesManager.class) {
-                if (instance == null) {
-                    instance = new PropertiesManager();
-                }
-            }
-        }
-        return instance;
+        return INSTANCE;
     }
 
     /**
-     * Carga todas las properties desde carpeta externa o recursos del classpath.
-     * Construye un mapa inmutable y properties inmutables para proteger la configuración.
-     * Si no existe la carpeta externa 'config', intenta cargar desde recursos empaquetados.
+     * Carga todos los ficheros properties disponibles desde el directorio externo
+     * o desde los recursos empaquetados en el classpath.
+     * Construye un mapa inmutable de propiedades.
      *
-     * @throws PropertiesLoadException si ocurre un error al leer cualquier fichero.
+     * @throws PropertiesLoadException si ocurre un error durante la lectura
      */
     private void loadAllProperties() {
         Map<String, Properties> tempMap = new HashMap<>();
@@ -92,46 +102,51 @@ public class PropertiesManager {
             }
         } else {
             log.warn("Directorio '{}' no encontrado. Intentando cargar desde recursos del JAR...", CONFIG_DIR);
-            // Lista fija de recursos para cargar desde JAR (puedes modificar o parametrizar)
+            // Lista fija de recursos para cargar desde JAR (se puede parametrizar)
             List<String> resourcesToLoad = List.of("app.properties", "db.properties");
             for (String resourceName : resourcesToLoad) {
-
                 Optional.of(loadPropertiesFromResource(String.format("%s/%s", CONFIG_DIR, resourceName)))
                         .ifPresent(props -> tempMap.put(stripExtension(resourceName), makeImmutable(props)));
             }
         }
 
-        // Mapa inmutable para evitar modificaciones accidentales
         this.propertiesMap = Collections.unmodifiableMap(tempMap);
         log.info("Cargados {} ficheros .properties", propertiesMap.size());
+        if (log.isDebugEnabled()) {
+            printAllProperties();
+        }
     }
 
     /**
-     * Carga un fichero .properties desde un archivo externo en disco.
+     * Carga un fichero properties desde un archivo externo.
      *
-     * @param file archivo .properties
-     * @return Properties cargadas
-     * @throws PropertiesLoadException si falla la lectura
+     * @param file archivo .properties a cargar
+     * @return objeto Properties cargado
+     * @throws PropertiesLoadException si ocurre error durante la lectura
      */
     private Properties loadPropertiesFromFile(File file) {
+        log.debug("[loadPropertiesFromFile] Inicio carga fichero externo: {}", file.getAbsolutePath());
+        long start = System.nanoTime();
         try (FileInputStream fis = new FileInputStream(file)) {
             Properties props = new Properties();
             props.load(fis);
-            log.debug("Cargado archivo externo: {}", file.getAbsolutePath());
+            long duration = System.nanoTime() - start;
+            log.info("[loadPropertiesFromFile] Cargado fichero '{}' con {} claves en {} ms",
+                    file.getName(), props.size(), duration / 1_000_000);
             return props;
         } catch (IOException e) {
             String msg = String.format("Error leyendo el archivo: %s", file.getName());
-            log.error(msg, e);
+            log.error("[loadPropertiesFromFile] {}", msg, e);
             throw new PropertiesLoadException(msg, e);
         }
     }
 
     /**
-     * Carga un fichero .properties desde los recursos empaquetados en el JAR (classpath).
+     * Carga un fichero properties desde un recurso empaquetado en el classpath.
      *
-     * @param resourcePath ruta del recurso en classpath
-     * @return Properties cargadas o null si no existe recurso
-     * @throws PropertiesLoadException si falla la lectura
+     * @param resourcePath ruta del recurso (e.g. "config/app.properties")
+     * @return objeto Properties cargado o propiedades vacías si no existe recurso
+     * @throws PropertiesLoadException si ocurre error de lectura
      */
     private Properties loadPropertiesFromResource(String resourcePath) {
         try (InputStream is = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
@@ -151,10 +166,11 @@ public class PropertiesManager {
     }
 
     /**
-     * Crea una versión inmutable de un objeto Properties para evitar modificaciones.
+     * Crea una copia inmutable del objeto Properties recibido,
+     * para evitar modificaciones posteriores.
      *
      * @param original Properties original mutable
-     * @return Properties inmutable que lanza UnsupportedOperationException si se intenta modificar
+     * @return Properties inmutable que lanza excepción si se intenta modificar
      */
     private Properties makeImmutable(Properties original) {
         Properties copy = new Properties() {
@@ -178,10 +194,10 @@ public class PropertiesManager {
     }
 
     /**
-     * Quita la extensión '.properties' de un nombre de fichero.
+     * Quita la extensión {@code .properties} del nombre del fichero.
      *
-     * @param filename nombre de fichero
-     * @return nombre sin extensión
+     * @param filename nombre del fichero completo
+     * @return nombre sin la extensión
      */
     private String stripExtension(String filename) {
         if (filename == null) return null;
@@ -192,11 +208,11 @@ public class PropertiesManager {
     }
 
     /**
-     * Imprime todas las propiedades de un fichero específico en el log,
-     * ocultando valores sensibles.
+     * Imprime en el log todas las propiedades de un fichero dado,
+     * ocultando los valores sensibles.
      *
      * @param fileNameWithoutExtension nombre del fichero sin extensión
-     * @throws PropertiesLoadException si no existe el fichero
+     * @throws PropertiesLoadException si el fichero no existe
      */
     public void printProperties(String fileNameWithoutExtension) {
         Properties props = propertiesMap.get(fileNameWithoutExtension);
@@ -215,25 +231,22 @@ public class PropertiesManager {
     }
 
     /**
-     * Imprime todas las propiedades de todos los ficheros cargados.
-     * Si no hay ficheros cargados, informa en log.
+     * Imprime en el log todas las propiedades de todos los ficheros cargados.
+     * Si no hay ficheros, lo indica en log.
      */
     public void printAllProperties() {
         if (propertiesMap.isEmpty()) {
             log.info("No se han cargado ficheros .properties.");
             return;
         }
-        propertiesMap.forEach((fileNameWithoutExtension, props) ->
-                printProperties(fileNameWithoutExtension)
-        );
+        propertiesMap.forEach((fileNameWithoutExtension, props) -> printProperties(fileNameWithoutExtension));
     }
 
     /**
-     * Devuelve una copia inmutable de las propiedades de un fichero específico.
-     * Retorna null si no existe el fichero.
+     * Devuelve una copia inmutable de las propiedades de un fichero.
      *
      * @param fileNameWithoutExtension nombre fichero sin extensión
-     * @return Properties inmutable o null si no existe
+     * @return Properties inmutable (vacías si no existe fichero)
      */
     public Properties getProperties(String fileNameWithoutExtension) {
         Properties props = propertiesMap.get(fileNameWithoutExtension);
@@ -243,40 +256,39 @@ public class PropertiesManager {
     }
 
     /**
-     * Obtiene el valor de una clave buscando primero en el fichero properties,
-     * si no existe busca en variables de entorno y luego en propiedades del sistema.
+     * Obtiene el valor de una clave dada buscando en orden:
+     * primero en el fichero properties especificado, luego en variables de entorno,
+     * y finalmente en propiedades del sistema.
      *
-     * @param fileName nombre fichero properties sin extensión
+     * @param fileName nombre del fichero sin extensión
      * @param key clave a buscar
-     * @return valor encontrado o null si no existe en ningún lugar
+     * @return valor encontrado o {@code null} si no existe
      */
     public String getProperty(String fileName, String key) {
         Properties props = propertiesMap.get(fileName);
         if (props != null && props.containsKey(key)) {
             return props.getProperty(key);
         }
-        // fallback variables entorno y sistema
         String env = System.getenv(key);
         if (env != null) return env;
         return System.getProperty(key);
     }
 
     /**
-     * Devuelve el mapa completo de propiedades cargadas.
-     * Tanto el mapa como las Properties son inmutables.
+     * Devuelve el mapa completo e inmutable de propiedades cargadas.
      *
-     * @return mapa inmutable de propiedades
+     * @return mapa con claves fichero y valores Properties inmutables
      */
     public Map<String, Properties> getAllProperties() {
         return propertiesMap;
     }
 
     /**
-     * Determina si una clave es considerada sensible (para ocultar su valor).
-     * La comparación es case-insensitive y busca si contiene alguna palabra sensible.
+     * Determina si una clave debe considerarse sensible para ocultar su valor.
+     * La comparación no distingue mayúsculas y minúsculas.
      *
      * @param key clave a evaluar
-     * @return true si es sensible, false en caso contrario
+     * @return {@code true} si la clave es sensible; {@code false} en otro caso
      */
     private boolean isSensitiveKey(String key) {
         return SENSITIVE_KEYS.stream()
@@ -284,13 +296,13 @@ public class PropertiesManager {
     }
 
     /**
-     * Exporta un fichero properties a formato JSON, opcionalmente ocultando
-     * valores sensibles.
+     * Exporta un fichero properties a formato JSON.
+     * Opcionalmente oculta valores sensibles.
      *
      * @param fileName nombre fichero sin extensión
-     * @param maskSensitiveValues true para ocultar valores sensibles
-     * @return JSON formateado con las propiedades
-     * @throws PropertiesLoadException si el fichero no existe o error JSON
+     * @param maskSensitiveValues {@code true} para ocultar valores sensibles
+     * @return cadena JSON con las propiedades
+     * @throws PropertiesLoadException si el fichero no existe o falla la conversión JSON
      */
     public String exportAsJson(String fileName, boolean maskSensitiveValues) {
         Properties props = propertiesMap.get(fileName);
@@ -313,12 +325,12 @@ public class PropertiesManager {
     }
 
     /**
-     * Exporta todas las properties cargadas a JSON, opcionalmente ocultando
-     * valores sensibles.
+     * Exporta todas las properties cargadas a formato JSON agrupadas por fichero.
+     * Opcionalmente oculta valores sensibles.
      *
-     * @param maskSensitiveValues true para ocultar valores sensibles
-     * @return JSON formateado con todas las propiedades agrupadas por fichero
-     * @throws PropertiesLoadException si error en exportación JSON
+     * @param maskSensitiveValues {@code true} para ocultar valores sensibles
+     * @return cadena JSON con todas las propiedades agrupadas
+     * @throws PropertiesLoadException si falla la conversión JSON
      */
     public String exportAllAsJson(boolean maskSensitiveValues) {
         Map<String, Map<String, String>> allSafeProps = new HashMap<>();
@@ -341,36 +353,41 @@ public class PropertiesManager {
     }
 
     /**
-     * Valida que un fichero properties contenga un conjunto de claves requeridas.
-     * Lanza excepción si alguna clave falta.
+     * Valida que un fichero properties contenga todas las claves indicadas.
+     * Si falta alguna clave, lanza excepción.
      *
      * @param fileName nombre fichero sin extensión
-     * @param requiredKeys conjunto de claves obligatorias
+     * @param requiredKeys conjunto de claves requeridas
      * @throws PropertiesLoadException si falta alguna clave o fichero no existe
      */
     public void validateRequiredKeys(String fileName, Set<String> requiredKeys) {
+        log.debug("[validateRequiredKeys] Validando claves requeridas en fichero: {}", fileName);
         Properties props = propertiesMap.get(fileName);
         if (props == null) {
             String msg = String.format("No se encontró el fichero: %s%s", fileName, PROPERTIES_EXT);
-            log.error(msg);
+            log.error("[validateRequiredKeys] {}", msg);
             throw new PropertiesLoadException(msg);
         }
         for (String key : requiredKeys) {
             if (!props.containsKey(key)) {
                 String msg = String.format("Clave requerida faltante: %s en %s%s", key, fileName, PROPERTIES_EXT);
-                log.error(msg);
+                log.warn("[validateRequiredKeys] {}", msg);
                 throw new PropertiesLoadException(msg);
             }
         }
+        log.info("[validateRequiredKeys] Todas las claves requeridas están presentes en '{}'", fileName);
     }
 
     /**
-     * Recarga todas las propiedades desde la carpeta o recursos,
-     * reemplazando el mapa actual con uno nuevo e inmutable.
-     * Método sincronizado para evitar problemas concurrentes.
+     * Recarga todas las propiedades desde la fuente original.
+     * Reemplaza el mapa actual por uno nuevo y sincroniza el método para evitar
+     * condiciones de carrera en entornos concurrentes.
      */
     public synchronized void reload() {
+        log.info("[reload] Inicio recarga de propiedades");
+        long start = System.nanoTime();
         loadAllProperties();
-        log.info("Recargadas todas las propiedades");
+        long duration = System.nanoTime() - start;
+        log.info("[reload] Recarga completada en {} ms", duration / 1_000_000);
     }
 }
