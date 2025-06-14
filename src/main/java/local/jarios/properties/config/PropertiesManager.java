@@ -112,9 +112,7 @@ public class PropertiesManager {
 
         this.propertiesMap = Collections.unmodifiableMap(tempMap);
         log.info("Cargados {} ficheros .properties", propertiesMap.size());
-        if (log.isDebugEnabled()) {
-            printAllProperties();
-        }
+
     }
 
     /**
@@ -220,14 +218,10 @@ public class PropertiesManager {
             throw new PropertiesLoadException("No se encontró el fichero: " + fileNameWithoutExtension + PROPERTIES_EXT);
         }
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("---- [").append(fileNameWithoutExtension).append(PROPERTIES_EXT).append("] ----\n");
         props.forEach((key, value) -> {
             String val = isSensitiveKey(key.toString()) ? "*****" : value.toString();
-            sb.append(key).append(" = ").append(val).append("\n");
+            log.info("{} = {}", key, val);
         });
-        sb.append("----------------------------------------");
-        log.info(sb.toString());
     }
 
     /**
@@ -307,7 +301,8 @@ public class PropertiesManager {
     public String exportAsJson(String fileName, boolean maskSensitiveValues) {
         Properties props = propertiesMap.get(fileName);
         if (props == null) {
-            throw new PropertiesLoadException("No se encontró el fichero: " + fileName + PROPERTIES_EXT);
+            String msg = String.format("No se encontró el fichero: %s", fileName + PROPERTIES_EXT);
+            throw new PropertiesLoadException(msg);
         }
         Map<String, String> safeMap = props.stringPropertyNames()
                 .stream()
@@ -389,5 +384,21 @@ public class PropertiesManager {
         loadAllProperties();
         long duration = System.nanoTime() - start;
         log.info("[reload] Recarga completada en {} ms", duration / 1_000_000);
+    }
+
+    /**
+     * Imprime en el log todas las propiedades cargadas en formato JSON,
+     * agrupadas por fichero. Los valores sensibles se pueden enmascarar.
+     *
+     * @param maskSensitiveValues {@code true} para ocultar claves sensibles; {@code false} para mostrarlas tal cual
+     */
+    public void printAllAsJson(boolean maskSensitiveValues) {
+        log.info("[printAllAsJson] Exportando propiedades en formato JSON (ocultar sensibles: {})", maskSensitiveValues);
+        try {
+            String json = exportAllAsJson(maskSensitiveValues);
+            log.info("----[PROPERTIES AS JSON]----\n{}\n-----------------------------", json);
+        } catch (PropertiesLoadException e) {
+            log.error("[printAllAsJson] Error al exportar propiedades como JSON", e);
+        }
     }
 }
