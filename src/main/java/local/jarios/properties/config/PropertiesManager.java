@@ -37,6 +37,11 @@ public class PropertiesManager {
     private static final PropertiesManager INSTANCE = new PropertiesManager();
 
     /**
+     * Valor utilizado para ocultar los valores asociados a las key-sensitives.
+     */
+    private static final String KEY_SENSITIVE_VALUE = "******";
+
+    /**
      * Extensión estándar de ficheros properties.
      */
     private static final String PROPERTIES_EXT = ".properties";
@@ -220,7 +225,7 @@ public class PropertiesManager {
         }
 
         props.forEach((key, value) -> {
-            String val = isSensitiveKey(key.toString()) ? "*****" : value.toString();
+            String val = isSensitiveKey(key.toString()) ? KEY_SENSITIVE_VALUE : value.toString();
             log.info("{} = {}", key, val);
         });
     }
