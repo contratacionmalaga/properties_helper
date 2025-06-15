@@ -13,10 +13,14 @@ package local.jarios.utils;
  */
 public final class Constantes {
 
-    /**
-     * Directorio de configuración esperado para ficheros properties.
-     */
+    /** Directorio donde se encuentran los ficheros de config */
     public static final String CONFIG_DIR = "config";
+
+    /** Nombre sin extensión del fichero app.properties */
+    public static final String APP_PROPERTIES = "app";
+
+    /** Nombre sin extensión del fichero email.properties */
+    public static final String EMAIL_PROPERTIES = "email";
 
     /**
      * Constructor privado para evitar instanciación.

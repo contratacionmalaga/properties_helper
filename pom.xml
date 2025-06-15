@@ -34,7 +34,7 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <exec.mainClass>local.jarios.properties-helper</exec.mainClass>
-        <jackson.version>2.19.0</jackson.version>
+        <jackson.version>2.19.1</jackson.version>
     </properties>
 
     <dependencies>
@@ -79,6 +79,12 @@
             <version>${jackson.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>local.jarios</groupId>
+            <artifactId>version-from-manifest</artifactId>
+            <version>1.0.1</version>
+        </dependency>
+
         <!-- Dependencias para JUnit 5 -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -102,6 +108,13 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>5.18.0</version> <!-- o última estable -->
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -116,6 +129,9 @@
                 <version>3.2.5</version>
                 <configuration>
                     <useModulePath>false</useModulePath> <!-- importante si usas Java 9+ con módulos -->
+                    <argLine>
+                        -javaagent:"${settings.localRepository}/net/bytebuddy/byte-buddy-agent/1.17.5/byte-buddy-agent-1.17.5.jar" -XX:+EnableDynamicAgentLoading
+                    </argLine>
                 </configuration>
             </plugin>
 
@@ -229,6 +245,7 @@
                         <manifest>
                             <addClasspath>true</addClasspath>
                             <mainClass>local.jarios.properties-helper</mainClass>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                         </manifest>
                     </archive>
                     <descriptorRefs>

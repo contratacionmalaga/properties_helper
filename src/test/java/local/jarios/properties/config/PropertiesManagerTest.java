@@ -1,6 +1,7 @@
 package local.jarios.properties.config;
 
 import local.jarios.properties.exception.PropertiesLoadException;
+import local.jarios.utils.Constantes;
 import org.junit.jupiter.api.*;
 
 import java.util.Properties;
@@ -16,6 +17,7 @@ class PropertiesManagerTest {
     @BeforeAll
     static void setup() {
         manager = PropertiesManager.getInstance();
+        manager.loadAllProperties(Constantes.CONFIG_DIR);
     }
 
     @Test
@@ -28,7 +30,7 @@ class PropertiesManagerTest {
     @Test
     @Order(2)
     void testLoadPropertiesExist() {
-        Properties props = manager.getProperties("app");
+        Properties props = manager.getProperties(Constantes.APP_PROPERTIES);
         assertNotNull(props, "El fichero app.properties debe existir");
         assertFalse(props.isEmpty(), "app.properties no debe estar vacío");
     }
@@ -54,7 +56,7 @@ class PropertiesManagerTest {
     @Order(5)
     void testValidateRequiredKeysSuccess() {
         Set<String> required = Set.of("app.name");
-        boolean valid = manager.validateRequiredKeys("app", required);
+        boolean valid = manager.validateRequiredKeys(Constantes.APP_PROPERTIES, required);
         assertTrue(valid, "Todas las claves requeridas deben estar presentes");
     }
 
@@ -62,14 +64,14 @@ class PropertiesManagerTest {
     @Order(6)
     void testValidateRequiredKeysFail() {
         Set<String> required = Set.of("clave.inexistente");
-        boolean valid = manager.validateRequiredKeys("app", required);
+        boolean valid = manager.validateRequiredKeys(Constantes.APP_PROPERTIES, required);
         assertFalse(valid, "Debe detectar que falta alguna clave requerida");
     }
 
     @Test
     @Order(7)
     void testExportPropertiesToJson() {
-        String json = manager.exportPropertiesToJson("app", true);
+        String json = manager.exportPropertiesToJson(Constantes.APP_PROPERTIES, true);
         assertNotNull(json);
         assertTrue(json.contains("app.name"), "JSON exportado debe contener 'app.name'");
 
