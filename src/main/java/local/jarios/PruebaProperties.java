@@ -2,6 +2,7 @@ package local.jarios;
 
 import local.jarios.properties.config.PropertiesManager;
 import local.jarios.properties.exception.PropertiesLoadException;
+import local.jarios.utils.Constantes;
 import local.jarios.utils.Mensajes;
 import lombok.extern.slf4j.Slf4j;
 
@@ -47,10 +48,15 @@ public class PruebaProperties {
         try {
             // Obtener instancia Singleton
             PropertiesManager manager = PropertiesManager.getInstance();
+            log.info("Creado el objeto PropertiesManager correcatmente");
+
+            manager.loadProperties(Constantes.CONFIG_DIR);
+            log.info("Cargados los ficheros properties correcatmente");
 
             // === Configuración inicial ===
             Set<String> clavesSensibles = Set.of("password", "secret", "token", "apikey");
             manager.setSensitiveKeys(clavesSensibles);  // Ahora se aplica sobre la instancia
+            log.info("Definido el conjunto de claves sensibles: {}", clavesSensibles);
 
             // Listado de todos los ficheros cargados
             log.info("=== LISTA DE FICHEROS CARGADOS ===");
@@ -83,17 +89,13 @@ public class PruebaProperties {
 
             // Exportar a JSON
             log.info("=== EXPORT A JSON ===");
-            String json = manager.exportAsJson(testFile, true);
+            String json = manager.exportPropertiesToJson(testFile, true);
             log.info("JSON exportado (con máscara):\n{}", json);
 
             // Exportar todos a JSON
             log.info("=== EXPORT TODO A JSON ===");
-            String fullJson = manager.exportAllAsJson(false);
+            String fullJson = manager.exportAllPropertiesToJson(false);
             log.info("Todos los ficheros exportados:\n{}", fullJson);
-
-            // Imprimir en log con formato JSON
-            log.info("=== PRINT JSON A LOG (con máscara) ===");
-            manager.printAllAsJson(true);
 
             // Recargar propiedades
             log.info("=== RECARGA DE PROPIEDADES ===");

@@ -44,7 +44,7 @@ class PropertiesManagerTest {
     @Test
     @Order(4)
     void testPrintPropertiesException() {
-        Exception e = assertThrows(PropertiesLoadException.class, () -> {
+        PropertiesLoadException e = assertThrows(PropertiesLoadException.class, () -> {
             manager.printProperties("noExiste");
         });
         assertTrue(e.getMessage().contains("No se encontró el fichero"));
@@ -52,28 +52,29 @@ class PropertiesManagerTest {
 
     @Test
     @Order(5)
-    void testValidateRequiredKeys() {
+    void testValidateRequiredKeysSuccess() {
         Set<String> required = Set.of("app.name");
-        assertDoesNotThrow(() -> manager.validateRequiredKeys("app", required));
+        boolean valid = manager.validateRequiredKeys("app", required);
+        assertTrue(valid, "Todas las claves requeridas deben estar presentes");
     }
 
     @Test
     @Order(6)
     void testValidateRequiredKeysFail() {
         Set<String> required = Set.of("clave.inexistente");
-        PropertiesLoadException e = assertThrows(PropertiesLoadException.class, () -> {
-            manager.validateRequiredKeys("app", required);
-        });
-        assertTrue(e.getMessage().contains("Clave requerida faltante"));
+        boolean valid = manager.validateRequiredKeys("app", required);
+        assertFalse(valid, "Debe detectar que falta alguna clave requerida");
     }
 
     @Test
     @Order(7)
-    void testExportAsJson() {
-        String json = manager.exportAsJson("app", true);
+    void testExportPropertiesToJson() {
+        String json = manager.exportPropertiesToJson("app", true);
         assertNotNull(json);
-        assertTrue(json.contains("app.name"));
-        assertTrue(json.contains("*****") || json.contains("app.name")); // máscara o valor real
+        assertTrue(json.contains("app.name"), "JSON exportado debe contener 'app.name'");
+
+        // Verificamos que al menos contenga la máscara o el valor real
+        assertTrue(json.contains("******") || json.contains("app.name"));
     }
 
     @Test

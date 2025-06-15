@@ -3,6 +3,7 @@ package local.jarios.properties.config;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import local.jarios.properties.exception.PropertiesLoadException;
+import local.jarios.utils.Constantes;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
@@ -27,7 +28,7 @@ import java.util.stream.Collectors;
  * @author Juan Antonio
  * @version 1.0
  * @since 2024-06-04
-  */
+ */
 @Slf4j
 public class PropertiesManager {
 
@@ -46,10 +47,7 @@ public class PropertiesManager {
      */
     private static final String PROPERTIES_EXT = ".properties";
 
-    /**
-     * Directorio de configuración esperado para ficheros properties.
-     */
-    private static final String CONFIG_DIR = "config";
+
 
     /**
      * Mapa inmutable que contiene el conjunto de propiedades cargadas,
@@ -110,7 +108,7 @@ public class PropertiesManager {
     private void loadAllProperties() {
         Map<String, Properties> tempMap = new HashMap<>();
 
-        File configDir = new File(CONFIG_DIR);
+        File configDir = new File(Constantes.CONFIG_DIR);
         if (configDir.exists() && configDir.isDirectory()) {
             File[] files = configDir.listFiles((dir, name) -> name.endsWith(PROPERTIES_EXT));
             if (files != null) {
@@ -120,11 +118,11 @@ public class PropertiesManager {
                 }
             }
         } else {
-            log.warn("Directorio '{}' no encontrado. Intentando cargar desde recursos del JAR...", CONFIG_DIR);
+            log.warn("Directorio '{}' no encontrado. Intentando cargar desde recursos del JAR.", Constantes.CONFIG_DIR);
             // Lista fija de recursos para cargar desde JAR (se puede parametrizar)
             List<String> resourcesToLoad = List.of("app.properties", "db.properties");
             for (String resourceName : resourcesToLoad) {
-                Optional.of(loadPropertiesFromResource(String.format("%s/%s", CONFIG_DIR, resourceName)))
+                Optional.of(loadPropertiesFromResource(String.format("%s/%s", Constantes.CONFIG_DIR, resourceName)))
                         .ifPresent(props -> tempMap.put(stripExtension(resourceName), makeImmutable(props)));
             }
         }
@@ -178,6 +176,40 @@ public class PropertiesManager {
         } catch (IOException e) {
             String msg = String.format("Error leyendo recurso: %s", resourcePath);
             log.error(msg, e);
+            throw new PropertiesLoadException(msg, e);
+        }
+    }
+
+    /**
+     * Carga un fichero properties desde una ruta externa específica.
+     * <p>
+     * Permite cargar propiedades adicionales fuera del directorio por defecto
+     * o recursos del classpath. El resultado es una copia inmutable del Properties.
+     * <p>
+     * Uso típico:
+     * <pre>
+     *   Properties props = PropertiesManager.getInstance().loadProperties("/ruta/miarchivo.properties");
+     * </pre>
+     *
+     * @param path ruta completa al fichero properties
+     * @throws PropertiesLoadException si el fichero no existe o hay error de lectura
+     */
+    public void loadProperties(String path) {
+        log.debug("[loadProperties] Intentando cargar fichero properties desde ruta: {}", path);
+        File file = new File(path);
+        if (!file.exists() || !file.isFile()) {
+            String msg = String.format("El fichero properties no existe o no es un archivo válido: %s", path);
+            log.error("[loadProperties] {}", msg);
+            throw new PropertiesLoadException(msg);
+        }
+        try (FileInputStream fis = new FileInputStream(file)) {
+            Properties props = new Properties();
+            props.load(fis);
+            log.debug("[loadProperties] Fichero '{}' cargado con {} claves", path, props.size());
+            makeImmutable(props);
+        } catch (IOException e) {
+            String msg = String.format("Error leyendo el fichero properties: %s", path);
+            log.error("[loadProperties] {}", msg, e);
             throw new PropertiesLoadException(msg, e);
         }
     }
@@ -326,107 +358,92 @@ public class PropertiesManager {
      * @return cadena JSON con las propiedades
      * @throws PropertiesLoadException si el fichero no existe o falla la conversión JSON
      */
-    public String exportAsJson(String fileName, boolean maskSensitiveValues) {
+    public String exportPropertiesToJson(String fileName, boolean maskSensitiveValues) {
         Properties props = propertiesMap.get(fileName);
         if (props == null) {
             String msg = String.format("No se encontró el fichero: %s", fileName + PROPERTIES_EXT);
             throw new PropertiesLoadException(msg);
         }
-        Map<String, String> safeMap = props.stringPropertyNames()
-                .stream()
+
+        Map<String, String> map = props.entrySet().stream()
                 .collect(Collectors.toMap(
-                        key -> key,
-                        key -> maskSensitiveValues && isSensitiveKey(key) ? "*****" : props.getProperty(key)
+                        e -> e.getKey().toString(),
+                        e -> {
+                            String val = e.getValue().toString();
+                            return maskSensitiveValues && isSensitiveKey(e.getKey().toString())
+                                    ? KEY_SENSITIVE_VALUE : val;
+                        }
                 ));
+
         try {
-            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(safeMap);
+            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(map);
         } catch (JsonProcessingException e) {
-            String msg = "Error exportando a JSON";
+            String msg = "Error exportando propiedades a JSON.";
             log.error(msg, e);
             throw new PropertiesLoadException(msg, e);
         }
     }
 
     /**
-     * Exporta todas las properties cargadas a formato JSON agrupadas por fichero.
-     * Opcionalmente oculta valores sensibles.
+     * Exporta todas las propiedades cargadas a formato JSON.
+     * Se pueden ocultar valores sensibles.
      *
      * @param maskSensitiveValues {@code true} para ocultar valores sensibles
-     * @return cadena JSON con todas las propiedades agrupadas
-     * @throws PropertiesLoadException si falla la conversión JSON
+     * @return cadena JSON con todas las propiedades
      */
-    public String exportAllAsJson(boolean maskSensitiveValues) {
-        Map<String, Map<String, String>> allSafeProps = new HashMap<>();
+    public String exportAllPropertiesToJson(boolean maskSensitiveValues) {
+        Map<String, Map<String, String>> allPropsMap = new HashMap<>();
+
         propertiesMap.forEach((fileName, props) -> {
-            Map<String, String> safeProps = props.stringPropertyNames()
-                    .stream()
+            Map<String, String> map = props.entrySet().stream()
                     .collect(Collectors.toMap(
-                            key -> key,
-                            key -> maskSensitiveValues && isSensitiveKey(key) ? "*****" : props.getProperty(key)
+                            e -> e.getKey().toString(),
+                            e -> {
+                                String val = e.getValue().toString();
+                                return maskSensitiveValues && isSensitiveKey(e.getKey().toString())
+                                        ? KEY_SENSITIVE_VALUE : val;
+                            }
                     ));
-            allSafeProps.put(fileName, safeProps);
+            allPropsMap.put(fileName, map);
         });
+
         try {
-            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(allSafeProps);
+            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(allPropsMap);
         } catch (JsonProcessingException e) {
-            String msg = "Error exportando todo a JSON";
+            String msg = "Error exportando todas las propiedades a JSON.";
             log.error(msg, e);
             throw new PropertiesLoadException(msg, e);
         }
     }
 
     /**
-     * Valida que un fichero properties contenga todas las claves indicadas.
-     * Si falta alguna clave, lanza excepción.
+     * Valida que un fichero properties contenga todas las claves requeridas.
      *
      * @param fileName nombre fichero sin extensión
-     * @param requiredKeys conjunto de claves requeridas
-     * @throws PropertiesLoadException si falta alguna clave o fichero no existe
+     * @param requiredKeys conjunto de claves obligatorias
+     * @return {@code true} si todas las claves están presentes; {@code false} en caso contrario
      */
-    public void validateRequiredKeys(String fileName, Set<String> requiredKeys) {
-        log.debug("[validateRequiredKeys] Validando claves requeridas en fichero: {}", fileName);
+    public boolean validateRequiredKeys(String fileName, Set<String> requiredKeys) {
         Properties props = propertiesMap.get(fileName);
         if (props == null) {
-            String msg = String.format("No se encontró el fichero: %s%s", fileName, PROPERTIES_EXT);
-            log.error("[validateRequiredKeys] {}", msg);
-            throw new PropertiesLoadException(msg);
+            log.debug("Fichero '{}' no encontrado para validación.", fileName);
+            return false;
         }
         for (String key : requiredKeys) {
             if (!props.containsKey(key)) {
-                String msg = String.format("Clave requerida faltante: %s en %s%s", key, fileName, PROPERTIES_EXT);
-                log.warn("[validateRequiredKeys] {}", msg);
-                throw new PropertiesLoadException(msg);
+                log.debug("Fichero '{}' no contiene la clave requerida: {}", fileName, key);
+                return false;
             }
         }
-        log.info("[validateRequiredKeys] Todas las claves requeridas están presentes en '{}'", fileName);
+        return true;
     }
 
     /**
-     * Recarga todas las propiedades desde la fuente original.
-     * Reemplaza el mapa actual por uno nuevo y sincroniza el método para evitar
-     * condiciones de carrera en entornos concurrentes.
+     * Recarga todas las propiedades desde disco y recursos, actualizando el mapa interno.
+     * Sincronizado para evitar condiciones de carrera.
      */
     public synchronized void reload() {
-        log.info("[reload] Inicio recarga de propiedades");
-        long start = System.nanoTime();
+        log.debug("Recargando propiedades...");
         loadAllProperties();
-        long duration = System.nanoTime() - start;
-        log.info("[reload] Recarga completada en {} ms", duration / 1_000_000);
-    }
-
-    /**
-     * Imprime en el log todas las propiedades cargadas en formato JSON,
-     * agrupadas por fichero. Los valores sensibles se pueden enmascarar.
-     *
-     * @param maskSensitiveValues {@code true} para ocultar claves sensibles; {@code false} para mostrarlas tal cual
-     */
-    public void printAllAsJson(boolean maskSensitiveValues) {
-        log.info("[printAllAsJson] Exportando propiedades en formato JSON (ocultar sensibles: {})", maskSensitiveValues);
-        try {
-            String json = exportAllAsJson(maskSensitiveValues);
-            log.info("----[PROPERTIES AS JSON]----\n{}\n-----------------------------", json);
-        } catch (PropertiesLoadException e) {
-            log.error("[printAllAsJson] Error al exportar propiedades como JSON", e);
-        }
     }
 }
