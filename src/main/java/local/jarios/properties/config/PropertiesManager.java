@@ -94,37 +94,6 @@ public class PropertiesManager {
     }
 
     /**
-     * Carga un fichero properties individual desde ruta absoluta,
-     * y añade o reemplaza esa propiedad en el mapa interno.
-     *
-     * @param filePath ruta absoluta del fichero .properties
-     * @throws PropertiesLoadException si no existe el fichero o error lectura
-     */
-    public synchronized void loadProperties(String filePath) {
-        log.debug("[loadProperties] Intentando cargar fichero properties desde ruta: {}", filePath);
-        File file = new File(filePath);
-        if (!file.exists() || !file.isFile()) {
-            String msg = String.format("El fichero properties no existe o no es un archivo válido: %s", filePath);
-            log.error("[loadProperties] {}", msg);
-            throw new PropertiesLoadException(msg);
-        }
-        try (FileInputStream fis = new FileInputStream(file)) {
-            Properties props = new Properties();
-            props.load(fis);
-            Properties immutableProps = makeImmutable(props);
-            // Añadimos o reemplazamos la entrada en el mapa
-            Map<String, Properties> newMap = new HashMap<>(propertiesMap);
-            newMap.put(stripExtension(file.getName()), immutableProps);
-            propertiesMap = Collections.unmodifiableMap(newMap);
-            log.debug("[loadProperties] Fichero '{}' cargado con {} claves", filePath, props.size());
-        } catch (IOException e) {
-            String msg = String.format("Error leyendo el fichero properties: %s", filePath);
-            log.error("[loadProperties] {}", msg, e);
-            throw new PropertiesLoadException(msg, e);
-        }
-    }
-
-    /**
      * Carga todos los ficheros .properties desde un directorio,
      * o desde recursos JAR si no se encuentra el directorio.
      * Reemplaza completamente el mapa interno de propiedades.
@@ -132,15 +101,23 @@ public class PropertiesManager {
      * @param dirPath ruta al directorio con ficheros .properties
      */
     public synchronized void loadAllProperties(String dirPath) {
+        log.debug("[loadAllProperties] - Cargando todas las propiedades desde: {}", dirPath);
         Map<String, Properties> tempMap = new HashMap<>();
 
         File configDir = new File(dirPath);
+        log.debug("[loadAllProperties] - Path absoluto: {}", configDir.getAbsolutePath());
         if (configDir.exists() && configDir.isDirectory()) {
+            log.debug("[loadAllProperties] - El directorio es correcto.");
             File[] files = configDir.listFiles((dir, name) -> name.endsWith(PROPERTIES_EXT));
             if (files != null) {
+                log.debug("[loadAllProperties] - Número de ficheros en el directorio: {}", files.length);
                 for (File file : files) {
+                    log.debug("[loadAllProperties] - Procesando fichero: {}", file.getName());
                     try {
                         Properties props = loadPropertiesFromFile(file);
+                        if (log.isDebugEnabled()) {
+                            printProperties(props);
+                        }
                         tempMap.put(stripExtension(file.getName()), makeImmutable(props));
                     } catch (PropertiesLoadException e) {
                         log.warn("[loadAllProperties] No se pudo cargar '{}': {}", file.getName(), e.getMessage());
@@ -172,9 +149,14 @@ public class PropertiesManager {
      * @throws PropertiesLoadException en caso de error
      */
     private Properties loadPropertiesFromFile(File file) {
+        log.debug("[loadPropertiesFromFile] - Cargando todas las propiedades desde: {}", file.getName());
         try (InputStream is = new FileInputStream(file)) {
+            log.debug("[loadPropertiesFromFile] - Fichero cargado correctamente.");
             Properties props = new Properties();
             props.load(is);
+            if (log.isDebugEnabled()) {
+                printProperties(props);
+            }
             return props;
         } catch (IOException e) {
             throw new PropertiesLoadException("Error cargando fichero: " + file.getName(), e);
@@ -189,12 +171,17 @@ public class PropertiesManager {
      * @throws PropertiesLoadException en caso de error o recurso no encontrado
      */
     private Properties loadPropertiesFromResource(String resourcePath) {
+        log.debug("[loadPropertiesFromResource] - Cargando todas las propiedades desde resource: {}", resourcePath);
         try (InputStream is = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
+            log.debug("[loadPropertiesFromResource] - Fichero cargado correctamente.");
             if (is == null) {
                 throw new PropertiesLoadException("Recurso no encontrado: " + resourcePath);
             }
             Properties props = new Properties();
             props.load(is);
+            if (log.isDebugEnabled()) {
+                printProperties(props);
+            }
             return props;
         } catch (IOException e) {
             throw new PropertiesLoadException("Error cargando recurso: " + resourcePath, e);
@@ -242,12 +229,8 @@ public class PropertiesManager {
             String msg = String.format("No se encontró el fichero: %s", fileNameWithoutExtension + PROPERTIES_EXT);
             throw new PropertiesLoadException(msg);
         }
-
         log.info(">>> {}", fileNameWithoutExtension + PROPERTIES_EXT);
-        props.forEach((key, value) -> {
-            String val = isSensitiveKey(key.toString()) ? KEY_SENSITIVE_VALUE : value.toString();
-            log.info("{} = {}", key, val);
-        });
+        printProperties(props);
     }
 
     /**
@@ -269,7 +252,11 @@ public class PropertiesManager {
      * @return Properties inmutable (vacías si no existe fichero)
      */
     public Properties getProperties(String fileNameWithoutExtension) {
+        log.debug("[getProperties] - Propiedades del fichero: {}", fileNameWithoutExtension);
         Properties props = propertiesMap.get(fileNameWithoutExtension);
+        if (log.isDebugEnabled()) {
+            printProperties(props);
+        }
         if (props == null) return new Properties();
         return makeImmutable(props);
     }
@@ -284,8 +271,12 @@ public class PropertiesManager {
      * @return valor encontrado o {@code null} si no existe
      */
     public String getProperty(String fileName, String key) {
+        log.debug("[getProperty] - Consulta de: <{},{}>", fileName, key);
         Properties props = propertiesMap.get(fileName);
         if (props != null && props.containsKey(key)) {
+            if (log.isDebugEnabled()) {
+                printProperties(props);
+            }
             return props.getProperty(key);
         }
         String env = System.getenv(key);
@@ -431,5 +422,16 @@ public class PropertiesManager {
         int lastDot = fileName.lastIndexOf('.');
         if (lastDot == -1) return fileName;
         return fileName.substring(0, lastDot);
+    }
+
+    /**
+     * Impresión de ficheros properties
+     * @param props El propertie a imprimir
+     */
+    private void printProperties(Properties props) {
+        props.forEach((key, value) -> {
+            String val = isSensitiveKey(key.toString()) ? KEY_SENSITIVE_VALUE : value.toString();
+            log.info("{} = {}", key, val);
+        });
     }
 }

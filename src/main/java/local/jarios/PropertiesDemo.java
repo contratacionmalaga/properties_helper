@@ -52,23 +52,26 @@ public class PropertiesDemo {
             PropertiesManager propertiesManager = PropertiesManager.getInstance();
             log.info("Instancia PropertiesManager obtenida correctamente.");
 
+            // === Configuración inicial ===
+            Set<String> clavesSensibles = Set.of("password");
+            propertiesManager.setSensitiveKeys(clavesSensibles);  // Ahora se aplica sobre la instancia
+            log.info("Establezco el conjunto de claves Sensibles: {}", clavesSensibles);
+
+            // Cargar todas las propiedades desde el directorio de configuración
+            propertiesManager.loadAllProperties(Constantes.CONFIG_DIR);
+            log.info("Ficheros .properties cargados desde correctamente");
+
             var versionFromManifestService = new VersionFromManifestServiceImpl();
             log.info("Creado el objeto VersionFromManifestService correctamente.");
 
             String appName = propertiesManager.getProperty(Constantes.APP_PROPERTIES, "app.name");
             log.info("AppName: {}", appName);
 
+            String appDescripcion = propertiesManager.getProperty(Constantes.APP_PROPERTIES, "app.descripcion");
+            log.info("AppDescripcion: {}", appDescripcion);
+
             String appVersion = versionFromManifestService.getVersion(PropertiesDemo.class);
             log.info("AppVersion: {}", appVersion);
-
-            // Cargar todas las propiedades desde el directorio de configuración
-            propertiesManager.loadAllProperties(Constantes.CONFIG_DIR);
-            log.info("Ficheros .properties cargados desde correctamente");
-
-            // Definir claves sensibles para enmascarar en impresiones y exportaciones
-            Set<String> clavesSensibles = Set.of("password", "secret", "token", "apikey");
-            propertiesManager.setSensitiveKeys(clavesSensibles);
-            log.info("Claves sensibles definidas: {}", clavesSensibles);
 
             // Mostrar listado de ficheros cargados
             log.info("=== LISTADO DE FICHEROS CARGADOS ===");
