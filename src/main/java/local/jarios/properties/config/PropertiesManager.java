@@ -479,7 +479,7 @@ public class PropertiesManager {
     ) {
         props.forEach((key, value) -> {
             String val = isSensitiveKey(key.toString()) ? KEY_SENSITIVE_VALUE : value.toString();
-            log.info("{} = {}", key, val);
+            log.debug("{} = {}", key, val);
         });
     }
 }
