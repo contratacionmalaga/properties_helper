@@ -48,6 +48,7 @@ public class PropertiesDemo {
         log.info(Mensajes.INICIO);
 
         try {
+
             // Obtener la instancia singleton
             PropertiesManager propertiesManager = PropertiesManager.getInstance();
             log.info("Instancia PropertiesManager obtenida correctamente.");
@@ -59,7 +60,7 @@ public class PropertiesDemo {
 
             // Cargar todas las propiedades desde el directorio de configuración
             propertiesManager.loadAllProperties(Constantes.CONFIG_DIR);
-            log.info("Ficheros .properties cargados desde correctamente");
+            log.info("Ficheros .properties cargados desde /{} correctamente", Constantes.CONFIG_DIR);
 
             var versionFromManifestService = new VersionFromManifestServiceImpl();
             log.info("Creado el objeto VersionFromManifestService correctamente.");

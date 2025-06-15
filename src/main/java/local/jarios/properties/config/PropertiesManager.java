@@ -88,7 +88,9 @@ public class PropertiesManager {
      *
      * @param keys conjunto de claves sensibles (puede ser {@code null})
      */
-    public void setSensitiveKeys(Set<String> keys) {
+    public void setSensitiveKeys(
+            Set<String> keys
+    ) {
         this.sensitiveKeys = (keys == null) ? Collections.emptySet() : Set.copyOf(keys);
         log.debug("[setSensitiveKeys] Claves sensibles configuradas: {}", this.sensitiveKeys);
     }
@@ -100,7 +102,9 @@ public class PropertiesManager {
      *
      * @param dirPath ruta al directorio con ficheros .properties
      */
-    public synchronized void loadAllProperties(String dirPath) {
+    public synchronized void loadAllProperties(
+            String dirPath
+    ) {
         log.debug("[loadAllProperties] - Cargando todas las propiedades desde: {}", dirPath);
         Map<String, Properties> tempMap = new HashMap<>();
 
@@ -148,7 +152,9 @@ public class PropertiesManager {
      * @return Properties cargadas
      * @throws PropertiesLoadException en caso de error
      */
-    private Properties loadPropertiesFromFile(File file) {
+    private Properties loadPropertiesFromFile(
+            File file
+    ) {
         log.debug("[loadPropertiesFromFile] - Cargando todas las propiedades desde: {}", file.getName());
         try (InputStream is = new FileInputStream(file)) {
             log.debug("[loadPropertiesFromFile] - Fichero cargado correctamente.");
@@ -170,7 +176,9 @@ public class PropertiesManager {
      * @return Properties cargadas
      * @throws PropertiesLoadException en caso de error o recurso no encontrado
      */
-    private Properties loadPropertiesFromResource(String resourcePath) {
+    private Properties loadPropertiesFromResource(
+            String resourcePath
+    ) {
         log.debug("[loadPropertiesFromResource] - Cargando todas las propiedades desde resource: {}", resourcePath);
         try (InputStream is = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
             log.debug("[loadPropertiesFromResource] - Fichero cargado correctamente.");
@@ -195,7 +203,9 @@ public class PropertiesManager {
      * @param original Properties original mutable
      * @return Properties inmutable que lanza excepción si se intenta modificar
      */
-    private Properties makeImmutable(Properties original) {
+    private Properties makeImmutable(
+            Properties original
+    ) {
         Properties copy = new Properties() {
             @Override
             public synchronized Object put(Object key, Object value) {
@@ -223,7 +233,9 @@ public class PropertiesManager {
      * @param fileNameWithoutExtension nombre del fichero sin extensión
      * @throws PropertiesLoadException si el fichero no existe
      */
-    public void printProperties(String fileNameWithoutExtension) {
+    public void printProperties(
+            String fileNameWithoutExtension
+    ) {
         Properties props = propertiesMap.get(fileNameWithoutExtension);
         if (props == null) {
             String msg = String.format("No se encontró el fichero: %s", fileNameWithoutExtension + PROPERTIES_EXT);
@@ -251,7 +263,9 @@ public class PropertiesManager {
      * @param fileNameWithoutExtension nombre fichero sin extensión
      * @return Properties inmutable (vacías si no existe fichero)
      */
-    public Properties getProperties(String fileNameWithoutExtension) {
+    public Properties getProperties(
+            String fileNameWithoutExtension
+    ) {
         log.debug("[getProperties] - Propiedades del fichero: {}", fileNameWithoutExtension);
         Properties props = propertiesMap.get(fileNameWithoutExtension);
         if (log.isDebugEnabled()) {
@@ -270,7 +284,10 @@ public class PropertiesManager {
      * @param key clave a buscar
      * @return valor encontrado o {@code null} si no existe
      */
-    public String getProperty(String fileName, String key) {
+    public String getProperty(
+            String fileName,
+            String key
+    ) {
         log.debug("[getProperty] - Consulta de: <{},{}>", fileName, key);
         Properties props = propertiesMap.get(fileName);
         if (props != null && props.containsKey(key)) {
@@ -300,7 +317,9 @@ public class PropertiesManager {
      * @param key clave a evaluar
      * @return {@code true} si la clave es sensible; {@code false} en otro caso
      */
-    private boolean isSensitiveKey(String key) {
+    private boolean isSensitiveKey(
+            String key
+    ) {
         String keyLower = key.toLowerCase(Locale.ROOT);
         for (String sensitive : sensitiveKeys) {
             log.debug("[isSensitiveKey] Comprobando '{}' contra '{}'", keyLower, sensitive.toLowerCase(Locale.ROOT));
@@ -321,7 +340,10 @@ public class PropertiesManager {
      * @return cadena JSON con las propiedades
      * @throws PropertiesLoadException si el fichero no existe o falla la conversión JSON
      */
-    public String exportPropertiesToJson(String fileName, boolean maskSensitiveValues) {
+    public String exportPropertiesToJson(
+            String fileName,
+            boolean maskSensitiveValues
+    ) {
         Properties props = propertiesMap.get(fileName);
         if (props == null) {
             String msg = String.format("No se encontró el fichero: %s", fileName + PROPERTIES_EXT);
@@ -355,7 +377,9 @@ public class PropertiesManager {
      * @return cadena JSON con todas las propiedades
      * @throws PropertiesLoadException si falla la conversión JSON
      */
-    public String exportAllPropertiesToJson(boolean maskSensitiveValues) {
+    public String exportAllPropertiesToJson(
+            boolean maskSensitiveValues
+    ) {
         Map<String, Map<String, String>> allPropsMap = new HashMap<>();
 
         propertiesMap.forEach((fileName, props) -> {
@@ -387,11 +411,19 @@ public class PropertiesManager {
      * @param requiredKeys conjunto de claves obligatorias
      * @return {@code true} si todas las claves están presentes; {@code false} en caso contrario
      */
-    public boolean validateRequiredKeys(String fileName, Set<String> requiredKeys) {
+    public boolean validateRequiredKeys(
+            String fileName,
+            Set<String> requiredKeys
+    ) {
+        log.debug("[validateRequiredKeys] - fichero: {}", fileName);
+        log.debug("[validateRequiredKeys] - Conjunto de Key requeridas: {}", requiredKeys);
         Properties props = propertiesMap.get(fileName);
         if (props == null) {
             log.debug("Fichero '{}' no encontrado para validación.", fileName);
             return false;
+        }
+        if (log.isDebugEnabled()) {
+            printProperties(props);
         }
         for (String key : requiredKeys) {
             if (!props.containsKey(key)) {
@@ -406,7 +438,9 @@ public class PropertiesManager {
      * Recarga todas las propiedades desde el directorio configurado en Constantes.CONFIG_DIR,
      * actualizando el mapa interno de forma sincronizada.
      */
-    public synchronized void reload() {
+    public synchronized void reload(
+
+    ) {
         log.debug("Recargando propiedades...");
         loadAllProperties(Constantes.CONFIG_DIR);
     }
@@ -417,18 +451,32 @@ public class PropertiesManager {
      * @param fileName nombre del fichero con extensión
      * @return nombre sin extensión
      */
-    private String stripExtension(String fileName) {
-        if (fileName == null) return "";
+    private String stripExtension(
+            String fileName
+    ) {
+        log.debug("[stripExtension]");
+        if (fileName == null) {
+            log.debug("[stripExtension] - El fichero es null.");
+            return "";
+        }
+        log.debug("[stripExtension] - Eliminación de la extensión para el fichero: {}", fileName);
         int lastDot = fileName.lastIndexOf('.');
-        if (lastDot == -1) return fileName;
-        return fileName.substring(0, lastDot);
+        if (lastDot == -1) {
+            log.debug("[stripExtension] - El fichero no tiene extensión: {}", fileName);
+            return fileName;
+        }
+        String nombreSinExtension =  fileName.substring(0, lastDot);
+        log.debug("[stripExtension] - Nombre del fichero sin extensión: {}", nombreSinExtension);
+        return nombreSinExtension;
     }
 
     /**
      * Impresión de ficheros properties
      * @param props El propertie a imprimir
      */
-    private void printProperties(Properties props) {
+    public void printProperties(
+            Properties props
+    ) {
         props.forEach((key, value) -> {
             String val = isSensitiveKey(key.toString()) ? KEY_SENSITIVE_VALUE : value.toString();
             log.info("{} = {}", key, val);
