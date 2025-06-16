@@ -2,17 +2,17 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>local.jarios</groupId>
-    <artifactId>properties-helper</artifactId>
+    <artifactId>properties_helper</artifactId>
     <version>1.0.12-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>properties-helper</name>
+    <name>properties_helper</name>
     <description>Gestión avanzada de ficheros properties</description>
 
     <scm>
-        <connection>scm:git:https://github.com/contratacionmalaga/properties-helper.git</connection>
-        <developerConnection>scm:git:git@github.com:contratacionmalaga/properties-helper.git</developerConnection>
-        <url>https://github.com/contratacionmalaga/properties-helper</url>
+        <connection>scm:git:https://github.com/contratacionmalaga/properties_helper.git</connection>
+        <developerConnection>scm:git:git@github.com:contratacionmalaga/properties_helper.git</developerConnection>
+        <url>https://github.com/contratacionmalaga/properties_helper</url>
         <tag>HEAD</tag>
     </scm>
 
@@ -20,20 +20,21 @@
         <repository>
             <id>github-releases</id>
             <!-- Cambié la URL a la correcta para GitHub Packages -->
-            <url>https://maven.pkg.github.com/contratacionmalaga/properties-helper</url>
+            <url>https://maven.pkg.github.com/contratacionmalaga/properties_helper</url>
         </repository>
         <snapshotRepository>
             <id>github-snapshots</id>
             <!-- Cambié la URL a la correcta para GitHub Packages -->
-            <url>https://maven.pkg.github.com/contratacionmalaga/properties-helper</url>
+            <url>https://maven.pkg.github.com/contratacionmalaga/properties_helper</url>
         </snapshotRepository>
     </distributionManagement>
 
     <properties>
+        <custom.final.name>${project.artifactId}-${project.version}</custom.final.name>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
-        <exec.mainClass>local.jarios.properties-helper</exec.mainClass>
+        <exec.mainClass>local.jarios.properties_helper</exec.mainClass>
         <jackson.version>2.19.1</jackson.version>
     </properties>
 
@@ -81,8 +82,8 @@
 
         <dependency>
             <groupId>local.jarios</groupId>
-            <artifactId>version-from-manifest</artifactId>
-            <version>1.0.1</version>
+            <artifactId>version_from_manifest</artifactId>
+            <version>1.0.2</version>
         </dependency>
 
         <!-- Dependencias para JUnit 5 -->
@@ -119,7 +120,7 @@
 
     <build>
 
-        <finalName>properties-helper</finalName>
+        <finalName>properties_helper</finalName>
 
         <plugins>
 
@@ -225,36 +226,31 @@
                 <version>2.18.0</version>
             </plugin>
 
+            <!-- plugin para generar jar normal -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.14.0</version>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.2</version>
                 <configuration>
-                    <source>21</source>
-                    <target>21</target>
-                    <compilerArgs>--enable-preview</compilerArgs>
+                    <finalName>${project.artifactId}-${project.version}</finalName>
                 </configuration>
             </plugin>
 
+            <!-- plugin para fat jar -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>3.7.1</version>
                 <configuration>
-                    <archive>
-                        <manifest>
-                            <addClasspath>true</addClasspath>
-                            <mainClass>local.jarios.properties-helper</mainClass>
-                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-                        </manifest>
-                    </archive>
+                    <appendAssemblyId>true</appendAssemblyId> <!-- para que tenga sufijo -->
+                    <finalName>${project.artifactId}-${project.version}</finalName> <!-- nombre con _fat -->
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>
                 </configuration>
                 <executions>
                     <execution>
-                        <id>make-assembly</id>
+                        <id>make-fat-jar</id>
                         <phase>package</phase>
                         <goals>
                             <goal>single</goal>
