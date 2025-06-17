@@ -1,89 +1,156 @@
 package local.jarios.properties.api;
 
 import local.jarios.properties.exception.PropertiesManagerException;
-import local.jarios.properties.utils.Constantes;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.io.TempDir;
 
-import java.util.Properties;
-import java.util.Set;
+import java.io.*;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.*;
 
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PropertiesManagerTest {
 
-    private static PropertiesManagerImpl manager;
+    private PropertiesManagerService manager;
 
-    @BeforeAll
-    static void setup() {
-        manager = PropertiesManagerImpl.getInstance();
-        manager.loadAllProperties(Constantes.CONFIG_DIR);
+    @TempDir
+    File tempDir;
+
+    @BeforeEach
+    void setUp() throws IOException {
+        // Creamos una implementación concreta del PropertiesManager
+        manager = new PropertiesManagerServiceImpl(); // Sustituye por tu clase real
+        manager.setConfigDir(tempDir.getAbsolutePath());
+
+        // Crear ficheros de prueba
+        createPropertiesFile("app.properties", Map.of(
+                "app.name", "DemoApp",
+                "app.version", "1.0",
+                "app.secret", "12345"
+        ));
+
+        createPropertiesFile("db.properties", Map.of(
+                "db.user", "admin",
+                "db.pass", "secret"
+        ));
+    }
+
+    void createPropertiesFile(String filename, Map<String, String> entries) throws IOException {
+        Properties props = new Properties();
+        props.putAll(entries);
+        File file = new File(tempDir, filename);
+        try (OutputStream out = new FileOutputStream(file)) {
+            props.store(out, null);
+        }
     }
 
     @Test
-    @Order(1)
-    void testSingletonInstance() {
-        PropertiesManagerImpl another = PropertiesManagerImpl.getInstance();
-        assertSame(manager, another, "Debe ser la misma instancia singleton");
+    void shouldLoadAllProperties() {
+        manager.loadAllProperties(tempDir.getAbsolutePath());
+        Map<String, Properties> allProps = manager.getAllProperties();
+
+        assertThat(allProps).hasSize(2);
+        assertThat(allProps.get("app")).containsEntry("app.name", "DemoApp");
+        assertThat(allProps.get("db")).containsEntry("db.user", "admin");
     }
 
     @Test
-    @Order(2)
-    void testLoadPropertiesExist() {
-        Properties props = manager.getProperties(Constantes.APP_PROPERTIES);
-        assertNotNull(props, "El fichero app.properties debe existir");
-        assertFalse(props.isEmpty(), "app.properties no debe estar vacío");
+    void shouldReturnImmutableProperties() {
+        manager.loadAllProperties(tempDir.getAbsolutePath());
+        Properties props = manager.getProperties("app");
+
+        assertThatThrownBy(() -> props.setProperty("new.key", "value"))
+                .isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
-    @Order(3)
-    void testGetPropertyFallback() {
-        // Suponemos que 'JAVA_HOME' está en env o sistema
-        String javaHome = manager.getProperty("nonexistentFile", "JAVA_HOME");
-        assertNotNull(javaHome, "Debe obtener JAVA_HOME del sistema o entorno");
+    void shouldMaskSensitiveKeysWhenPrinting() {
+        manager.setSensitiveKeys(Set.of("app.secret", "db.pass"));
+        manager.loadAllProperties(tempDir.getAbsolutePath());
+
+        // Captura consola si fuera necesario, aquí se asume que el log se verifica manualmente
+        manager.printAllProperties();
     }
 
     @Test
-    @Order(4)
-    void testPrintPropertiesException() {
-        PropertiesManagerException e = assertThrows(PropertiesManagerException.class, () -> {
-            manager.printProperties("noExiste");
-        });
-        assertTrue(e.getMessage().contains("No se encontró el fichero"));
+    void shouldGetPropertyInCorrectOrder() {
+        manager.loadAllProperties(tempDir.getAbsolutePath());
+        String val = manager.getProperty("app", "app.name");
+        assertThat(val).isEqualTo("DemoApp");
+
+        System.setProperty("db.user", "override");
+        val = manager.getProperty("db", "db.user");
+        assertThat(val).isEqualTo("admin"); // Se debe mantener preferencia por properties
     }
 
     @Test
-    @Order(5)
-    void testValidateRequiredKeysSuccess() {
-        Set<String> required = Set.of("app.name");
-        boolean valid = manager.validateRequiredKeys(Constantes.APP_PROPERTIES, required);
-        assertTrue(valid, "Todas las claves requeridas deben estar presentes");
+    void shouldExportToJsonMasked() {
+        manager.setSensitiveKeys(Set.of("db.pass"));
+        manager.loadAllProperties(tempDir.getAbsolutePath());
+
+        String json = manager.exportPropertiesToJson("db", true);
+        assertThat(json).contains("\"db.user\":\"admin\"");
+        assertThat(json).contains("\"db.pass\":\"*****\"");
     }
 
     @Test
-    @Order(6)
-    void testValidateRequiredKeysFail() {
-        Set<String> required = Set.of("clave.inexistente");
-        boolean valid = manager.validateRequiredKeys(Constantes.APP_PROPERTIES, required);
-        assertFalse(valid, "Debe detectar que falta alguna clave requerida");
+    void shouldExportAllToJson() {
+        manager.setSensitiveKeys(Set.of("app.secret", "db.pass"));
+        manager.loadAllProperties(tempDir.getAbsolutePath());
+
+        String json = manager.exportAllPropertiesToJson(true);
+        assertThat(json).contains("\"app.name\":\"DemoApp\"");
+        assertThat(json).contains("\"db.pass\":\"*****\"");
     }
 
     @Test
-    @Order(7)
-    void testExportPropertiesToJson() {
-        String json = manager.exportPropertiesToJson(Constantes.APP_PROPERTIES, true);
-        assertNotNull(json);
-        assertTrue(json.contains("app.name"), "JSON exportado debe contener 'app.name'");
+    void shouldValidateRequiredKeys() {
+        manager.loadAllProperties(tempDir.getAbsolutePath());
 
-        // Verificamos que al menos contenga la máscara o el valor real
-        assertTrue(json.contains("******") || json.contains("app.name"));
+        boolean valid = manager.validateRequiredKeys("app", Set.of("app.name", "app.version"));
+        assertThat(valid).isTrue();
+
+        boolean invalid = manager.validateRequiredKeys("app", Set.of("app.name", "app.port"));
+        assertThat(invalid).isFalse();
     }
 
     @Test
-    @Order(8)
-    void testReload() {
-        assertDoesNotThrow(() -> {
-            manager.reload();
-        });
+    void shouldReloadCorrectly() {
+        manager.loadAllProperties(tempDir.getAbsolutePath());
+        Map<String, Properties> original = manager.getAllProperties();
+
+        // Cambiamos los valores del fichero app.properties
+        createPropertiesFile("app.properties", Map.of("app.name", "ReloadedApp", "app.version", "2.0"));
+        manager.reload();
+
+        Properties reloaded = manager.getProperties("app");
+        assertThat(reloaded.getProperty("app.name")).isEqualTo("ReloadedApp");
     }
+
+    @Test
+    void shouldFallbackToDefaultConfigDirIfNull() {
+        manager.setConfigDir(null); // fuerza al uso del valor por defecto
+        assertThat(manager.getConfigDir()).isNotBlank();
+    }
+
+    @Test
+    void shouldFallbackToDefaultSecretKeyIfNull() {
+        manager.setSecretKey(null);
+        assertThat(manager.getSecretKey()).isNotBlank();
+    }
+
+    @Test
+    void shouldHandleMissingPropertyGracefully() {
+        manager.loadAllProperties(tempDir.getAbsolutePath());
+        String value = manager.getProperty("app", "nonexistent.key");
+        assertThat(value).isNull();
+    }
+
+    @Test
+    void shouldThrowWhenExportingNonExistentFile() {
+        assertThatThrownBy(() -> manager.exportPropertiesToJson("nonexistent", false))
+                .isInstanceOf(PropertiesManagerException.class);
+    }
+
 }

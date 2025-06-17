@@ -23,7 +23,7 @@ import java.util.Set;
  * @version 1.1
  * @since 2024-06-04
  */
-public interface PropertiesManager {
+public interface PropertiesManagerService {
 
     /**
      * Establece las claves que deben considerarse sensibles y, por lo tanto,
@@ -40,10 +40,8 @@ public interface PropertiesManager {
      * predefinidos desde el classpath (normalmente, dentro del JAR).
      *
      * <p>Este método reemplaza completamente cualquier conjunto de propiedades cargadas previamente.</p>
-     *
-     * @param dirPath La ruta al directorio que contiene los ficheros .properties.
      */
-    void loadAllProperties(String dirPath);
+    void loadAllProperties();
 
     /**
      * Imprime en el log las propiedades de un fichero específico,
@@ -71,7 +69,7 @@ public interface PropertiesManager {
      * @return Un objeto {@code Properties} inmutable que contiene las propiedades del fichero.
      * Devuelve un objeto {@code Properties} vacío si el fichero no existe entre los cargados.
      */
-    PropertiesManager getProperties(String fileNameWithoutExtension);
+    Properties getProperties(String fileNameWithoutExtension);
 
     /**
      * Obtiene el valor de una clave específica. La búsqueda se realiza en el siguiente orden:
@@ -148,6 +146,15 @@ public interface PropertiesManager {
     void setConfigDir(String configDir);
 
     /**
+     * Obtiene la ruta del directorio desde donde se cargarán los ficheros .properties.
+     * Si la ruta proporcionada es {@code null} o una cadena vacía/en blanco,
+     * se restablecerá a la ruta de configuración por defecto.
+     *
+     * @return El fichero de configuración definido.
+     */
+    String getConfigDir();
+
+    /**
      * Establece la clave secreta que se utilizará para desencriptar valores sensibles.
      * Si la clave proporcionada es {@code null} o una cadena vacía/en blanco,
      * se restablecerá a una clave por defecto (solo para desarrollo).
@@ -155,4 +162,13 @@ public interface PropertiesManager {
      * @param key La nueva clave secreta.
      */
     void setSecretKey(String key);
+
+    /**
+     * Establece la clave secreta que se utilizará para desencriptar valores sensibles.
+     * Si la clave proporcionada es {@code null} o una cadena vacía/en blanco,
+     * se restablecerá a una clave por defecto (solo para desarrollo).
+     *
+     * @return La clave secreta definida.
+     */
+    String getSecretKey();
 }

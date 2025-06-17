@@ -16,7 +16,7 @@
     <Loggers>
 
         <!-- Redirección del log del aplicativo. Por consola y almacenado en fichero. -->
-        <Root level="DEBUG">
+        <Root level="INFO">
             <AppenderRef ref="Console"/>
             <AppenderRef ref="File"/>
         </Root>

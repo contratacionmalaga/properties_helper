@@ -3,7 +3,7 @@ package local.jarios.properties.api;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import local.jarios.properties.exception.PropertiesManagerException;
-import local.jarios.properties.utils.Constantes;
+import local.jarios.properties.common.util.Constantes;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
@@ -30,45 +30,23 @@ import java.util.stream.Collectors;
  * @since 2024-06-04
  */
 @Slf4j
-public class PropertiesManagerImpl {
-
-    /**
-     * Ruta por defecto si no se establece otra.
-     */
-    private static final String DEFAULT_CONFIG_DIR = Constantes.CONFIG_DIR;
-
-    /**
-     * Ruta actual desde la que se cargan los .properties
-     */
-    private String configDir = DEFAULT_CONFIG_DIR;
-
-    /**
-     * Clave por defecto si no se establece otra.
-     */
-    private static final String DEFAULT_SECRET_KEY = "defaultKey123"; // solo para desarrollo
-
-    /**
-     * Clave actual usada para desencriptar valores sensibles.
-     */
-    private String secretKey = DEFAULT_SECRET_KEY;
+public class PropertiesManagerServiceImpl implements PropertiesManagerService {
 
     /**
      * Instancia única (singleton) del gestor de propiedades.
      * Se inicializa de forma temprana y segura al cargar la clase.
      */
-    private static final PropertiesManagerImpl INSTANCE = new PropertiesManagerImpl();
+    private static final PropertiesManagerServiceImpl INSTANCE = new PropertiesManagerServiceImpl();
 
     /**
-     * Valor que se usará para enmascarar claves sensibles durante la impresión o exportación.
-     * Útil para ocultar contraseñas, tokens, etc.
+     * Ruta actual desde la que se cargan los .properties
      */
-    private static final String KEY_SENSITIVE_VALUE = "******";
+    private String configDir;
 
     /**
-     * Extensión estándar usada para identificar ficheros de propiedades (.properties).
-     * Se utiliza para filtrar archivos o construir rutas.
+     * Clave actual usada para desencriptar valores sensibles.
      */
-    private static final String PROPERTIES_EXT = ".properties";
+    private String secretKey;
 
     /**
      * Mapa inmutable con el conjunto de propiedades cargadas,
@@ -78,7 +56,6 @@ public class PropertiesManagerImpl {
 
     /**
      * Instancia de {@link ObjectMapper} utilizada para convertir propiedades a formato JSON.
-     * Configurada con el generador por defecto de Jackson.
      */
     private static final ObjectMapper mapper = new ObjectMapper();
 
@@ -88,18 +65,19 @@ public class PropertiesManagerImpl {
     private Set<String> sensitiveKeys = Collections.emptySet();
 
     /**
-     * Constructor vacío
+     * Constructor privado
      */
-    private PropertiesManagerImpl() {
-        // Constructor privado Singleton
+    private PropertiesManagerServiceImpl() {
+        this.configDir = Constantes.DEFAULT_CONFIG_DIR;
+        this.secretKey = Constantes.DEFAULT_SECRET_KEY;
     }
 
     /**
-     * Obtiene la instancia única de {@code PropertiesManager}.
+     * Obtiene la instancia única de {@code PropertiesManagerService}.
      *
-     * @return instancia singleton
+     * @return instancia singleton como la interfaz
      */
-    public static PropertiesManagerImpl getInstance() {
+    public static PropertiesManagerService getInstance() {
         return INSTANCE;
     }
 
@@ -116,23 +94,22 @@ public class PropertiesManagerImpl {
     }
 
     /**
-     * Carga todos los ficheros .properties desde un directorio,
-     * o desde recursos JAR si no se encuentra el directorio.
+     * Carga todos los ficheros .properties desde el
+     * directorio definido o bien desde el directorio por defecto.
      * Reemplaza completamente el mapa interno de propiedades.
-     *
-     * @param dirPath ruta al directorio con ficheros .properties
      */
-    public synchronized void loadAllProperties(
-            String dirPath
-    ) {
+    public synchronized void loadAllProperties() {
+        String dirPath = getConfigDir();
         log.debug("[loadAllProperties] - Cargando todas las propiedades desde: {}", dirPath);
         Map<String, Properties> tempMap = new HashMap<>();
 
-        File configDir = new File(dirPath);
-        log.debug("[loadAllProperties] - Path absoluto: {}", configDir.getAbsolutePath());
-        if (configDir.exists() && configDir.isDirectory()) {
+        File auxConfigDir = new File(dirPath);
+        log.debug("[loadAllProperties] - Path absoluto: {}", auxConfigDir.getAbsolutePath());
+
+        if (auxConfigDir.exists() && auxConfigDir.isDirectory()) {
             log.debug("[loadAllProperties] - El directorio es correcto.");
-            File[] files = configDir.listFiles((dir, name) -> name.endsWith(PROPERTIES_EXT));
+            File[] files = auxConfigDir.listFiles((dir, name) -> name.endsWith(Constantes.PROPERTIES_EXT));
+
             if (files != null) {
                 log.debug("[loadAllProperties] - Número de ficheros en el directorio: {}", files.length);
                 for (File file : files) {
@@ -144,25 +121,16 @@ public class PropertiesManagerImpl {
                         }
                         tempMap.put(stripExtension(file.getName()), makeImmutable(props));
                     } catch (PropertiesManagerException e) {
-                        log.warn("[loadAllProperties] No se pudo cargar '{}': {}", file.getName(), e.getMessage());
+                        log.debug("[loadAllProperties] No se pudo cargar '{}': {}", file.getName(), e.getMessage());
                     }
                 }
             }
         } else {
-            log.warn("Directorio '{}' no encontrado. Intentando cargar desde recursos del JAR.", dirPath);
-            List<String> resourcesToLoad = List.of("app.properties", "db.properties");
-            for (String resourceName : resourcesToLoad) {
-                try {
-                    Properties props = loadPropertiesFromResource(dirPath + "/" + resourceName);
-                    tempMap.put(stripExtension(resourceName), makeImmutable(props));
-                } catch (PropertiesManagerException e) {
-                    log.warn("[loadAllProperties] No se pudo cargar recurso '{}': {}", resourceName, e.getMessage());
-                }
-            }
+            log.warn("[loadAllProperties] - El directorio '{}' no existe o no es un directorio válido.", dirPath);
         }
 
         propertiesMap = Collections.unmodifiableMap(tempMap);
-        log.debug("Cargados {} ficheros .properties desde '{}'", propertiesMap.size(), dirPath);
+        log.debug("[loadAllProperties] - Cargados {} ficheros .properties desde '{}'", propertiesMap.size(), dirPath);
     }
 
     /**
@@ -186,33 +154,6 @@ public class PropertiesManagerImpl {
             return props;
         } catch (IOException e) {
             throw new PropertiesManagerException("Error cargando fichero: " + file.getName(), e);
-        }
-    }
-
-    /**
-     * Carga propiedades desde recurso del classpath.
-     *
-     * @param resourcePath ruta del recurso dentro del classpath
-     * @return Properties cargadas
-     * @throws PropertiesManagerException en caso de error o recurso no encontrado
-     */
-    private Properties loadPropertiesFromResource(
-            String resourcePath
-    ) {
-        log.debug("[loadPropertiesFromResource] - Cargando todas las propiedades desde resource: {}", resourcePath);
-        try (InputStream is = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
-            log.debug("[loadPropertiesFromResource] - Fichero cargado correctamente.");
-            if (is == null) {
-                throw new PropertiesManagerException("Recurso no encontrado: " + resourcePath);
-            }
-            Properties props = new Properties();
-            props.load(is);
-            if (log.isDebugEnabled()) {
-                printProperties(props);
-            }
-            return props;
-        } catch (IOException e) {
-            throw new PropertiesManagerException("Error cargando recurso: " + resourcePath, e);
         }
     }
 
@@ -258,10 +199,10 @@ public class PropertiesManagerImpl {
     ) {
         Properties props = propertiesMap.get(fileNameWithoutExtension);
         if (props == null) {
-            String msg = String.format("No se encontró el fichero: %s", fileNameWithoutExtension + PROPERTIES_EXT);
+            String msg = String.format("No se encontró el fichero: %s", fileNameWithoutExtension + Constantes.PROPERTIES_EXT);
             throw new PropertiesManagerException(msg);
         }
-        log.info(">>> {}", fileNameWithoutExtension + PROPERTIES_EXT);
+        log.info(">>> {}", fileNameWithoutExtension + Constantes.PROPERTIES_EXT);
         printProperties(props);
     }
 
@@ -271,7 +212,7 @@ public class PropertiesManagerImpl {
      */
     public void printAllProperties() {
         if (propertiesMap.isEmpty()) {
-            log.info("No se han cargado ficheros .properties.");
+            log.debug("No se han cargado ficheros .properties.");
             return;
         }
         propertiesMap.forEach((
@@ -367,7 +308,7 @@ public class PropertiesManagerImpl {
     ) {
         Properties props = propertiesMap.get(fileName);
         if (props == null) {
-            String msg = String.format("No se encontró el fichero: %s", fileName + PROPERTIES_EXT);
+            String msg = String.format("No se encontró el fichero: %s", fileName + Constantes.PROPERTIES_EXT);
             throw new PropertiesManagerException(msg);
         }
 
@@ -377,7 +318,7 @@ public class PropertiesManagerImpl {
                         e -> {
                             String val = e.getValue().toString();
                             return maskSensitiveValues && isSensitiveKey(e.getKey().toString())
-                                    ? KEY_SENSITIVE_VALUE : val;
+                                    ? Constantes.KEY_SENSITIVE_VALUE : val;
                         }
                 ));
 
@@ -410,7 +351,7 @@ public class PropertiesManagerImpl {
                             e -> {
                                 String val = e.getValue().toString();
                                 return maskSensitiveValues && isSensitiveKey(e.getKey().toString())
-                                        ? KEY_SENSITIVE_VALUE : val;
+                                        ? Constantes.KEY_SENSITIVE_VALUE : val;
                             }
                     ));
             allPropsMap.put(fileName, map);
@@ -463,7 +404,7 @@ public class PropertiesManagerImpl {
 
     ) {
         log.debug("Recargando propiedades...");
-        loadAllProperties(this.configDir);
+        loadAllProperties();
     }
 
     /**
@@ -499,8 +440,8 @@ public class PropertiesManagerImpl {
             Properties props
     ) {
         props.forEach((key, value) -> {
-            String val = isSensitiveKey(key.toString()) ? KEY_SENSITIVE_VALUE : value.toString();
-            log.debug("{} = {}", key, val);
+            String val = isSensitiveKey(key.toString()) ? Constantes.KEY_SENSITIVE_VALUE : value.toString();
+            log.info("{} = {}", key, val);
         });
     }
 
@@ -510,8 +451,22 @@ public class PropertiesManagerImpl {
      * @param configDir ruta del directorio
      */
     public void setConfigDir(String configDir) {
-        this.configDir = (configDir == null || configDir.isBlank()) ? DEFAULT_CONFIG_DIR : configDir;
+        this.configDir = (configDir == null || configDir.isBlank()) ? Constantes.DEFAULT_CONFIG_DIR : configDir;
         log.debug("Ruta de configuración establecida: {}", this.configDir);
+    }
+
+    /**
+     * Establece la clave secreta usada para desencriptar valores sensibles.
+     *
+     * @return clave secreta
+     */
+    public String getConfigDir() {
+        if (this.configDir == null || this.secretKey.isBlank()) {
+            log.debug("Devuelvo el directorio por defecto: {}", Constantes.DEFAULT_CONFIG_DIR);
+            return Constantes.DEFAULT_CONFIG_DIR;
+        }
+        log.debug("Devuelvo el directorio: {}", this.configDir);
+        return this.configDir;
     }
 
     /**
@@ -520,7 +475,21 @@ public class PropertiesManagerImpl {
      * @param key clave secreta
      */
     public void setSecretKey(String key) {
-        this.secretKey = (key == null || key.isBlank()) ? DEFAULT_SECRET_KEY : key;
-        log.debug("Clave secreta establecida (oculta en log)");
+        this.secretKey = (key == null || key.isBlank()) ? Constantes.DEFAULT_SECRET_KEY : key;
+        log.debug("Clave secreta establecida: {}", key);
+    }
+
+    /**
+     * Establece la clave secreta usada para desencriptar valores sensibles.
+     *
+     * @return clave secreta
+     */
+    public String getSecretKey() {
+        if (this.secretKey == null || this.secretKey.isBlank()) {
+            log.debug("Devuelvo la clave secreta por defecto: {}", Constantes.DEFAULT_SECRET_KEY);
+            return Constantes.DEFAULT_SECRET_KEY;
+        }
+        log.debug("Devuelvo la clave secreta: {}", this.secretKey);
+        return this.secretKey;
     }
 }

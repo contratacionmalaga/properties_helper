@@ -1,4 +1,4 @@
-package local.jarios.properties.utils;
+package local.jarios.properties.common.util;
 
 /**
  * Clase que contiene constantes generales utilizadas a lo largo de la aplicación.
@@ -14,13 +14,28 @@ package local.jarios.properties.utils;
 public final class Constantes {
 
     /** Directorio donde se encuentran los ficheros de config */
-    public static final String CONFIG_DIR = "config";
+    public static final String DEFAULT_CONFIG_DIR = "config";
+
+    /** Clave por defecto */
+    public static final String DEFAULT_SECRET_KEY = "Malaga$$2025";
 
     /** Nombre sin extensión del fichero app.properties */
     public static final String APP_PROPERTIES = "app";
 
     /** Nombre sin extensión del fichero email.properties */
     public static final String EMAIL_PROPERTIES = "email";
+
+    /**
+     * Valor que se usará para enmascarar claves sensibles durante la impresión o exportación.
+     * Útil para ocultar contraseñas, tokens, etc.
+     */
+    public static final String KEY_SENSITIVE_VALUE = "******";
+
+    /**
+     * Extensión estándar usada para identificar ficheros de propiedades (.properties).
+     * Se utiliza para filtrar archivos o construir rutas.
+     */
+    public static final String PROPERTIES_EXT = ".properties";
 
     /**
      * Constructor privado para evitar instanciación.
