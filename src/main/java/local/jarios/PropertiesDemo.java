@@ -1,16 +1,16 @@
 package local.jarios;
 
-import local.jarios.properties.config.PropertiesManager;
-import local.jarios.properties.exception.PropertiesLoadException;
-import local.jarios.utils.Constantes;
-import local.jarios.utils.Mensajes;
+import local.jarios.properties.api.PropertiesManagerImpl;
+import local.jarios.properties.exception.PropertiesManagerException;
+import local.jarios.properties.utils.Constantes;
+import local.jarios.properties.utils.Mensajes;
 import local.jarios.versionfrommanifest.service.VersionFromManifestServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Set;
 
 /**
- * Clase principal que muestra el uso del {@link PropertiesManager} para gestionar
+ * Clase principal que muestra el uso del {@link PropertiesManagerImpl} para gestionar
  * archivos de propiedades (.properties) en el proyecto.
  * <p>
  * Funcionalidades demostradas:
@@ -20,7 +20,7 @@ import java.util.Set;
  *   <li>Exporta propiedades a formato JSON con ocultamiento de valores sensibles.</li>
  *   <li>Valida claves requeridas en archivos de propiedades.</li>
  *   <li>Permite recargar las propiedades.</li>
- *   <li>Manejo de excepciones mediante {@link PropertiesLoadException}.</li>
+ *   <li>Manejo de excepciones mediante {@link PropertiesManagerException}.</li>
  * </ul>
  * <p>
  * Uso de logs para trazabilidad detallada de cada paso.
@@ -39,7 +39,7 @@ public class PropertiesDemo {
     private PropertiesDemo() { /* Evitar instanciación */ }
 
     /**
-     * Método principal que ejecuta la demostración de uso del {@link PropertiesManager}.
+     * Método principal que ejecuta la demostración de uso del {@link PropertiesManagerImpl}.
      *
      * @param args argumentos de línea de comandos (no usados)
      */
@@ -50,7 +50,7 @@ public class PropertiesDemo {
         try {
 
             // Obtener la instancia singleton
-            PropertiesManager propertiesManager = PropertiesManager.getInstance();
+            PropertiesManagerImpl propertiesManager = PropertiesManagerImpl.getInstance();
             log.info("Instancia PropertiesManager obtenida correctamente.");
 
             // === Configuración inicial ===
@@ -117,7 +117,7 @@ public class PropertiesDemo {
             propertiesManager.reload();
             log.info("Recarga de propiedades completada.");
 
-        } catch (PropertiesLoadException e) {
+        } catch (PropertiesManagerException e) {
             log.error("Error durante la gestión de propiedades: {}", e.getMessage(), e);
         } finally {
             log.info(Mensajes.FINAL);

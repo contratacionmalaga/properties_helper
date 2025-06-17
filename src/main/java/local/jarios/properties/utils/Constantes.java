@@ -1,4 +1,4 @@
-package local.jarios.utils;
+package local.jarios.properties.utils;
 
 /**
  * Clase que contiene constantes generales utilizadas a lo largo de la aplicación.

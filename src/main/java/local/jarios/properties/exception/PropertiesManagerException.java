@@ -22,14 +22,14 @@ package local.jarios.properties.exception;
  * @version 1.0
  * @since 2025-06-13
  */
-public class PropertiesLoadException extends RuntimeException {
+public class PropertiesManagerException extends RuntimeException {
 
     /**
      * Construye una nueva excepción con un mensaje de error específico.
      *
      * @param message mensaje que describe la causa de la excepción
      */
-    public PropertiesLoadException(String message) {
+    public PropertiesManagerException(String message) {
         super(message);
     }
 
@@ -40,7 +40,7 @@ public class PropertiesLoadException extends RuntimeException {
      * @param message mensaje que describe la causa de la excepción
      * @param cause excepción original que provocó esta excepción
      */
-    public PropertiesLoadException(String message, Throwable cause) {
+    public PropertiesManagerException(String message, Throwable cause) {
         super(message, cause);
     }
 }

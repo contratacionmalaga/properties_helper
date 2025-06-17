@@ -1,4 +1,4 @@
-package local.jarios.utils;
+package local.jarios.properties.utils;
 
 /**
  * Clase final que contiene constantes de mensajes estáticos

@@ -1,9 +1,9 @@
-package local.jarios.properties.config;
+package local.jarios.properties.api;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import local.jarios.properties.exception.PropertiesLoadException;
-import local.jarios.utils.Constantes;
+import local.jarios.properties.exception.PropertiesManagerException;
+import local.jarios.properties.utils.Constantes;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
@@ -30,13 +30,33 @@ import java.util.stream.Collectors;
  * @since 2024-06-04
  */
 @Slf4j
-public class PropertiesManager {
+public class PropertiesManagerImpl {
+
+    /**
+     * Ruta por defecto si no se establece otra.
+     */
+    private static final String DEFAULT_CONFIG_DIR = Constantes.CONFIG_DIR;
+
+    /**
+     * Ruta actual desde la que se cargan los .properties
+     */
+    private String configDir = DEFAULT_CONFIG_DIR;
+
+    /**
+     * Clave por defecto si no se establece otra.
+     */
+    private static final String DEFAULT_SECRET_KEY = "defaultKey123"; // solo para desarrollo
+
+    /**
+     * Clave actual usada para desencriptar valores sensibles.
+     */
+    private String secretKey = DEFAULT_SECRET_KEY;
 
     /**
      * Instancia única (singleton) del gestor de propiedades.
      * Se inicializa de forma temprana y segura al cargar la clase.
      */
-    private static final PropertiesManager INSTANCE = new PropertiesManager();
+    private static final PropertiesManagerImpl INSTANCE = new PropertiesManagerImpl();
 
     /**
      * Valor que se usará para enmascarar claves sensibles durante la impresión o exportación.
@@ -70,7 +90,7 @@ public class PropertiesManager {
     /**
      * Constructor vacío
      */
-    private PropertiesManager() {
+    private PropertiesManagerImpl() {
         // Constructor privado Singleton
     }
 
@@ -79,7 +99,7 @@ public class PropertiesManager {
      *
      * @return instancia singleton
      */
-    public static PropertiesManager getInstance() {
+    public static PropertiesManagerImpl getInstance() {
         return INSTANCE;
     }
 
@@ -123,7 +143,7 @@ public class PropertiesManager {
                             printProperties(props);
                         }
                         tempMap.put(stripExtension(file.getName()), makeImmutable(props));
-                    } catch (PropertiesLoadException e) {
+                    } catch (PropertiesManagerException e) {
                         log.warn("[loadAllProperties] No se pudo cargar '{}': {}", file.getName(), e.getMessage());
                     }
                 }
@@ -135,7 +155,7 @@ public class PropertiesManager {
                 try {
                     Properties props = loadPropertiesFromResource(dirPath + "/" + resourceName);
                     tempMap.put(stripExtension(resourceName), makeImmutable(props));
-                } catch (PropertiesLoadException e) {
+                } catch (PropertiesManagerException e) {
                     log.warn("[loadAllProperties] No se pudo cargar recurso '{}': {}", resourceName, e.getMessage());
                 }
             }
@@ -150,7 +170,7 @@ public class PropertiesManager {
      *
      * @param file archivo .properties
      * @return Properties cargadas
-     * @throws PropertiesLoadException en caso de error
+     * @throws PropertiesManagerException en caso de error
      */
     private Properties loadPropertiesFromFile(
             File file
@@ -165,7 +185,7 @@ public class PropertiesManager {
             }
             return props;
         } catch (IOException e) {
-            throw new PropertiesLoadException("Error cargando fichero: " + file.getName(), e);
+            throw new PropertiesManagerException("Error cargando fichero: " + file.getName(), e);
         }
     }
 
@@ -174,7 +194,7 @@ public class PropertiesManager {
      *
      * @param resourcePath ruta del recurso dentro del classpath
      * @return Properties cargadas
-     * @throws PropertiesLoadException en caso de error o recurso no encontrado
+     * @throws PropertiesManagerException en caso de error o recurso no encontrado
      */
     private Properties loadPropertiesFromResource(
             String resourcePath
@@ -183,7 +203,7 @@ public class PropertiesManager {
         try (InputStream is = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
             log.debug("[loadPropertiesFromResource] - Fichero cargado correctamente.");
             if (is == null) {
-                throw new PropertiesLoadException("Recurso no encontrado: " + resourcePath);
+                throw new PropertiesManagerException("Recurso no encontrado: " + resourcePath);
             }
             Properties props = new Properties();
             props.load(is);
@@ -192,7 +212,7 @@ public class PropertiesManager {
             }
             return props;
         } catch (IOException e) {
-            throw new PropertiesLoadException("Error cargando recurso: " + resourcePath, e);
+            throw new PropertiesManagerException("Error cargando recurso: " + resourcePath, e);
         }
     }
 
@@ -231,7 +251,7 @@ public class PropertiesManager {
      * ocultando los valores sensibles.
      *
      * @param fileNameWithoutExtension nombre del fichero sin extensión
-     * @throws PropertiesLoadException si el fichero no existe
+     * @throws PropertiesManagerException si el fichero no existe
      */
     public void printProperties(
             String fileNameWithoutExtension
@@ -239,7 +259,7 @@ public class PropertiesManager {
         Properties props = propertiesMap.get(fileNameWithoutExtension);
         if (props == null) {
             String msg = String.format("No se encontró el fichero: %s", fileNameWithoutExtension + PROPERTIES_EXT);
-            throw new PropertiesLoadException(msg);
+            throw new PropertiesManagerException(msg);
         }
         log.info(">>> {}", fileNameWithoutExtension + PROPERTIES_EXT);
         printProperties(props);
@@ -254,7 +274,8 @@ public class PropertiesManager {
             log.info("No se han cargado ficheros .properties.");
             return;
         }
-        propertiesMap.forEach((fileNameWithoutExtension, props) -> printProperties(fileNameWithoutExtension));
+        propertiesMap.forEach((
+                fileNameWithoutExtension, props) -> printProperties(fileNameWithoutExtension));
     }
 
     /**
@@ -338,7 +359,7 @@ public class PropertiesManager {
      * @param fileName nombre fichero sin extensión
      * @param maskSensitiveValues {@code true} para ocultar valores sensibles
      * @return cadena JSON con las propiedades
-     * @throws PropertiesLoadException si el fichero no existe o falla la conversión JSON
+     * @throws PropertiesManagerException si el fichero no existe o falla la conversión JSON
      */
     public String exportPropertiesToJson(
             String fileName,
@@ -347,7 +368,7 @@ public class PropertiesManager {
         Properties props = propertiesMap.get(fileName);
         if (props == null) {
             String msg = String.format("No se encontró el fichero: %s", fileName + PROPERTIES_EXT);
-            throw new PropertiesLoadException(msg);
+            throw new PropertiesManagerException(msg);
         }
 
         Map<String, String> map = props.entrySet().stream()
@@ -365,7 +386,7 @@ public class PropertiesManager {
         } catch (JsonProcessingException e) {
             String msg = "Error exportando propiedades a JSON.";
             log.error(msg, e);
-            throw new PropertiesLoadException(msg, e);
+            throw new PropertiesManagerException(msg, e);
         }
     }
 
@@ -375,7 +396,7 @@ public class PropertiesManager {
      *
      * @param maskSensitiveValues {@code true} para ocultar valores sensibles
      * @return cadena JSON con todas las propiedades
-     * @throws PropertiesLoadException si falla la conversión JSON
+     * @throws PropertiesManagerException si falla la conversión JSON
      */
     public String exportAllPropertiesToJson(
             boolean maskSensitiveValues
@@ -400,7 +421,7 @@ public class PropertiesManager {
         } catch (JsonProcessingException e) {
             String msg = "Error exportando todas las propiedades a JSON.";
             log.error(msg, e);
-            throw new PropertiesLoadException(msg, e);
+            throw new PropertiesManagerException(msg, e);
         }
     }
 
@@ -442,7 +463,7 @@ public class PropertiesManager {
 
     ) {
         log.debug("Recargando propiedades...");
-        loadAllProperties(Constantes.CONFIG_DIR);
+        loadAllProperties(this.configDir);
     }
 
     /**
@@ -481,5 +502,25 @@ public class PropertiesManager {
             String val = isSensitiveKey(key.toString()) ? KEY_SENSITIVE_VALUE : value.toString();
             log.debug("{} = {}", key, val);
         });
+    }
+
+    /**
+     * Establece la ruta de configuración para cargar ficheros .properties.
+     *
+     * @param configDir ruta del directorio
+     */
+    public void setConfigDir(String configDir) {
+        this.configDir = (configDir == null || configDir.isBlank()) ? DEFAULT_CONFIG_DIR : configDir;
+        log.debug("Ruta de configuración establecida: {}", this.configDir);
+    }
+
+    /**
+     * Establece la clave secreta usada para desencriptar valores sensibles.
+     *
+     * @param key clave secreta
+     */
+    public void setSecretKey(String key) {
+        this.secretKey = (key == null || key.isBlank()) ? DEFAULT_SECRET_KEY : key;
+        log.debug("Clave secreta establecida (oculta en log)");
     }
 }

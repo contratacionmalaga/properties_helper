@@ -1,7 +1,7 @@
-package local.jarios.properties.config;
+package local.jarios.properties.api;
 
-import local.jarios.properties.exception.PropertiesLoadException;
-import local.jarios.utils.Constantes;
+import local.jarios.properties.exception.PropertiesManagerException;
+import local.jarios.properties.utils.Constantes;
 import org.junit.jupiter.api.*;
 
 import java.util.Properties;
@@ -12,18 +12,18 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class PropertiesManagerTest {
 
-    private static PropertiesManager manager;
+    private static PropertiesManagerImpl manager;
 
     @BeforeAll
     static void setup() {
-        manager = PropertiesManager.getInstance();
+        manager = PropertiesManagerImpl.getInstance();
         manager.loadAllProperties(Constantes.CONFIG_DIR);
     }
 
     @Test
     @Order(1)
     void testSingletonInstance() {
-        PropertiesManager another = PropertiesManager.getInstance();
+        PropertiesManagerImpl another = PropertiesManagerImpl.getInstance();
         assertSame(manager, another, "Debe ser la misma instancia singleton");
     }
 
@@ -46,7 +46,7 @@ class PropertiesManagerTest {
     @Test
     @Order(4)
     void testPrintPropertiesException() {
-        PropertiesLoadException e = assertThrows(PropertiesLoadException.class, () -> {
+        PropertiesManagerException e = assertThrows(PropertiesManagerException.class, () -> {
             manager.printProperties("noExiste");
         });
         assertTrue(e.getMessage().contains("No se encontró el fichero"));
