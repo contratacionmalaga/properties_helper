@@ -8,8 +8,7 @@ import java.util.Set;
 
 /**
  * Interfaz que define las operaciones para la gestión centralizada de ficheros .properties.
- *
- * <p>Esta API permite:
+ * Esta API permite:
  * <ul>
  *   <li>Carga de múltiples ficheros .properties desde una carpeta externa o el classpath.</li>
  *   <li>Acceso inmutable a las propiedades para evitar modificaciones accidentales.</li>
@@ -18,7 +17,6 @@ import java.util.Set;
  *   <li>Validación de la presencia de claves requeridas en un fichero.</li>
  *   <li>Recarga segura y sincronizada de todas las propiedades cargadas.</li>
  * </ul>
- * </p>
  *
  * @author Juan Antonio
  * @version 2.0

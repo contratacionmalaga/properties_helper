@@ -301,6 +301,8 @@ public class PropertiesManagerDemo {
 
     /**
      * Enmascara una cadena para mostrar información sensible de forma segura.
+     * @param input valor de entrada
+     * @return String enmascarado
      */
     private static String maskString(String input) {
         if (input == null || input.length() <= 4) {
