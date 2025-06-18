@@ -78,7 +78,7 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      * Mapa inmutable con las propiedades cargadas.
      * La clave es el nombre del fichero sin extensión, el valor son las Properties inmutables.
      *
-     * @implNote Se utiliza un mapa inmutable para garantizar thread-safety en operaciones de lectura
+     * Nota de implementación: Se utiliza un mapa inmutable para garantizar thread-safety en operaciones de lectura
      */
     private volatile Map<String, Properties> propertiesMap = Collections.emptyMap();
 

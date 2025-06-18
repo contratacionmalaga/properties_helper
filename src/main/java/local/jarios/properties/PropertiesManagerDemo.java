@@ -22,7 +22,10 @@ import java.util.*;
  */
 @Slf4j
 public class PropertiesManagerDemo {
-    
+
+    /**
+     * Instancia singleton del servicio de gestión de propiedades.
+     */
     static PropertiesManagerService propertiesManager = PropertiesManagerServiceImpl.getInstance();
 
     /**
@@ -312,7 +315,9 @@ public class PropertiesManagerDemo {
     }
 
     /**
-     * Método main para ejecutar la demo.
+     * Método principal para ejecutar la demo del PropertiesManager.
+     *
+     * @param args Argumentos de línea de comandos (no se usan)
      */
     public static void main(String[] args) {
         log.info("Iniciando demo del PropertiesManager");
