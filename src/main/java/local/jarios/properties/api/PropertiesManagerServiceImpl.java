@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
  * <p>Implementa el patrón Singleton thread-safe para garantizar acceso global único
  * y gestión consistente del estado de las propiedades cargadas.</p>
  *
- * <h3>Características principales:</h3>
+ * <h2>Características principales:</h2>
  * <ul>
  *   <li>Carga automática de múltiples ficheros .properties con fallback</li>
  *   <li>Inmutabilidad de propiedades para prevenir modificaciones accidentales</li>
@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
  *   <li>Búsqueda jerárquica: properties → variables entorno → propiedades sistema</li>
  * </ul>
  *
- * <h3>Uso típico:</h3>
+ * <h2>Uso típico:</h2>
  * <pre>{@code
  * PropertiesManagerService manager = PropertiesManagerServiceImpl.getInstance();
  * manager.setConfigDir("/path/to/config");
