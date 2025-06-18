@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>local.jarios</groupId>
     <artifactId>properties_helper</artifactId>
-    <version>v1.1.0-SNAPSHOT</version>
+    <version>v1.2.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>properties_helper</name>
@@ -30,7 +30,8 @@
     </distributionManagement>
 
     <properties>
-        <custom.final.name>${project.artifactId}-${project.version}</custom.final.name>
+        <version.trimmed>${project.version}</version.trimmed> <!-- Por defecto usa la versión completa -->
+        <final.name>${project.artifactId}-${version.trimmed}</final.name>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
@@ -120,7 +121,8 @@
 
     <build>
 
-        <finalName>properties_helper</finalName>
+        <!-- Nombre del JAR por defecto (incluye -SNAPSHOT si aplica) -->
+        <finalName>${final.name}</finalName>
 
         <plugins>
 
@@ -187,10 +189,23 @@
                 </configuration>
             </plugin>
 
+            <!-- Plugin para descomponer la versión y quitar -SNAPSHOT si hace falta -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
                 <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <id>parse-version</id>
+                        <goals>
+                            <goal>parse-version</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                        <configuration>
+                            <propertyPrefix>parsedVersion</propertyPrefix>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
@@ -226,24 +241,22 @@
                 <version>2.18.0</version>
             </plugin>
 
-            <!-- plugin para generar jar normal -->
+            <!-- Plugin maven-jar -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>3.4.2</version>
-                <configuration>
-                    <finalName>${project.artifactId}-${project.version}</finalName>
-                </configuration>
+                <!-- No config aquí; se toma el finalName del <build> -->
             </plugin>
 
-            <!-- plugin para fat jar -->
+            <!-- Plugin para fat JAR -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>3.7.1</version>
                 <configuration>
-                    <appendAssemblyId>true</appendAssemblyId> <!-- para que tenga sufijo -->
-                    <finalName>${project.artifactId}-${project.version}</finalName> <!-- nombre con _fat -->
+                    <appendAssemblyId>true</appendAssemblyId>
+                    <finalName>${project.artifactId}-${version.trimmed}</finalName>
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>
@@ -261,5 +274,18 @@
 
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>release</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <!-- Aquí defines manualmente la versión limpia -->
+                <version.trimmed>1.1.0</version.trimmed>
+            </properties>
+        </profile>
+    </profiles>
 
 </project>

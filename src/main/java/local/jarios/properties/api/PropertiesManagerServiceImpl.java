@@ -11,485 +11,842 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Gestión y carga centralizada de ficheros .properties desde carpeta externa o classpath.
- * <p>
- * Implementa patrón Singleton thread-safe para acceso global.
- * <p>
- * Funcionalidades principales:
+ * Implementación del servicio de gestión centralizada de ficheros .properties.
+ *
+ * <p>Esta implementación proporciona funcionalidades avanzadas para la gestión de archivos
+ * de configuración .properties, incluyendo carga desde directorios externos o classpath,
+ * manejo de valores sensibles, exportación a JSON y validación de configuraciones.</p>
+ *
+ * <p>Implementa el patrón Singleton thread-safe para garantizar acceso global único
+ * y gestión consistente del estado de las propiedades cargadas.</p>
+ *
+ * <h3>Características principales:</h3>
  * <ul>
- *   <li>Carga de múltiples ficheros .properties con fallback a recursos JAR.</li>
- *   <li>Inmutabilidad de las propiedades para evitar modificaciones accidentales.</li>
- *   <li>Ocultamiento de claves sensibles en impresión y exportación.</li>
- *   <li>Exportación a JSON de un fichero o todos.</li>
- *   <li>Validación de claves requeridas en un fichero.</li>
- *   <li>Recarga segura y sincronizada de propiedades.</li>
+ *   <li>Carga automática de múltiples ficheros .properties con fallback</li>
+ *   <li>Inmutabilidad de propiedades para prevenir modificaciones accidentales</li>
+ *   <li>Sistema de ocultamiento de valores sensibles configurable</li>
+ *   <li>Exportación flexible a formato JSON</li>
+ *   <li>Validación de claves requeridas por configuración</li>
+ *   <li>Recarga sincronizada y thread-safe</li>
+ *   <li>Búsqueda jerárquica: properties → variables entorno → propiedades sistema</li>
  * </ul>
  *
+ * <h3>Uso típico:</h3>
+ * <pre>{@code
+ * PropertiesManagerService manager = PropertiesManagerServiceImpl.getInstance();
+ * manager.setConfigDir("/path/to/config");
+ * manager.setSensitiveKeys(Set.of("password", "token", "secret"));
+ * manager.loadAllProperties();
+ *
+ * String value = manager.getProperty("database", "connection.url");
+ * }</pre>
+ *
  * @author Juan Antonio
- * @version 1.1
- * @since 2024-06-04
+ * @version 2.0
+ * @since 2024-06-18
+ * @see PropertiesManagerService
+ * @see PropertiesManagerException
  */
 @Slf4j
 public class PropertiesManagerServiceImpl implements PropertiesManagerService {
 
     /**
      * Instancia única (singleton) del gestor de propiedades.
-     * Se inicializa de forma temprana y segura al cargar la clase.
+     * Inicialización temprana y thread-safe mediante static final.
      */
     private static final PropertiesManagerServiceImpl INSTANCE = new PropertiesManagerServiceImpl();
 
     /**
-     * Ruta actual desde la que se cargan los .properties
+     * Convertidor JSON utilizado para exportación de propiedades.
+     * Configurado con pretty printing por defecto.
      */
-    private String configDir;
+    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
     /**
-     * Clave actual usada para desencriptar valores sensibles.
+     * Directorio actual desde el que se cargan los archivos .properties.
+     * Por defecto utiliza {@link Constantes#DEFAULT_CONFIG_DIR}.
      */
-    private String secretKey;
+    private volatile String configDir;
 
     /**
-     * Mapa inmutable con el conjunto de propiedades cargadas,
-     * donde la clave es el nombre del fichero sin extensión.
+     * Clave secreta utilizada para operaciones de desencriptación.
+     * Por defecto utiliza {@link Constantes#DEFAULT_SECRET_KEY}.
      */
-    private Map<String, Properties> propertiesMap = Collections.emptyMap();
+    private volatile String secretKey;
 
     /**
-     * Instancia de {@link ObjectMapper} utilizada para convertir propiedades a formato JSON.
+     * Mapa inmutable con las propiedades cargadas.
+     * La clave es el nombre del fichero sin extensión, el valor son las Properties inmutables.
+     *
+     * @implNote Se utiliza un mapa inmutable para garantizar thread-safety en operaciones de lectura
      */
-    private static final ObjectMapper mapper = new ObjectMapper();
+    private volatile Map<String, Properties> propertiesMap = Collections.emptyMap();
 
     /**
-     * Conjunto de claves consideradas sensibles y que deben ser ocultadas.
+     * Conjunto de claves consideradas sensibles que deben ser ocultadas.
+     * Las comparaciones se realizan sin distinción de mayúsculas/minúsculas.
      */
-    private Set<String> sensitiveKeys = Collections.emptySet();
+    private volatile Set<String> sensitiveKeys = Collections.emptySet();
 
     /**
-     * Constructor privado
+     * Constructor privado para implementación del patrón Singleton.
+     * Inicializa la instancia con valores por defecto definidos en {@link Constantes}.
      */
     private PropertiesManagerServiceImpl() {
         this.configDir = Constantes.DEFAULT_CONFIG_DIR;
         this.secretKey = Constantes.DEFAULT_SECRET_KEY;
+        log.debug("PropertiesManagerService inicializado con directorio: {} y clave secreta por defecto", configDir);
     }
 
     /**
-     * Obtiene la instancia única de {@code PropertiesManagerService}.
+     * Obtiene la instancia única del servicio de gestión de propiedades.
      *
-     * @return instancia singleton como la interfaz
+     * @return La instancia singleton como interfaz {@link PropertiesManagerService}
+     * @since 1.0
      */
     public static PropertiesManagerService getInstance() {
+        log.trace("Solicitada instancia singleton de PropertiesManagerService");
         return INSTANCE;
     }
 
     /**
-     * Establece las claves sensibles que deben ser ocultadas.
+     * {@inheritDoc}
      *
-     * @param keys conjunto de claves sensibles (puede ser {@code null})
+     * <p>Las claves sensibles se almacenan en un conjunto inmutable y se utilizan
+     * para comparaciones case-insensitive durante las operaciones de impresión y exportación.</p>
+     *
+     * @param keys {@inheritDoc}
+     * @throws PropertiesManagerException {@inheritDoc}
+     * @since 2.0
      */
-    public void setSensitiveKeys(
-            Set<String> keys
-    ) {
-        this.sensitiveKeys = (keys == null) ? Collections.emptySet() : Set.copyOf(keys);
-        log.debug("[setSensitiveKeys] Claves sensibles configuradas: {}", this.sensitiveKeys);
+    @Override
+    public void setSensitiveKeys(Set<String> keys) throws PropertiesManagerException {
+        try {
+            this.sensitiveKeys = (keys == null) ? Collections.emptySet() : Set.copyOf(keys);
+            log.info("Configuradas {} claves sensibles para ocultamiento", this.sensitiveKeys.size());
+            log.debug("Claves sensibles establecidas: {}", this.sensitiveKeys);
+        } catch (Exception e) {
+            String errorMsg = "Error al establecer claves sensibles";
+            log.error(errorMsg, e);
+            throw new PropertiesManagerException(errorMsg, e);
+        }
     }
 
     /**
-     * Carga todos los ficheros .properties desde el
-     * directorio definido o bien desde el directorio por defecto.
-     * Reemplaza completamente el mapa interno de propiedades.
+     * {@inheritDoc}
+     *
+     * <p>La carga se realiza de forma sincronizada para garantizar thread-safety.
+     * Los archivos se procesan desde el directorio configurado, y en caso de error
+     * en algún archivo individual, se continúa con el resto sin interrumpir el proceso.</p>
+     *
+     * @throws PropertiesManagerException {@inheritDoc}
+     * @since 1.0
      */
-    public synchronized void loadAllProperties() {
+    @Override
+    public synchronized void loadAllProperties() throws PropertiesManagerException {
         String dirPath = getConfigDir();
-        log.debug("[loadAllProperties] - Cargando todas las propiedades desde: {}", dirPath);
+        log.info("Iniciando carga de propiedades desde directorio: {}", dirPath);
+
         Map<String, Properties> tempMap = new HashMap<>();
+        File configDirectory = new File(dirPath);
 
-        File auxConfigDir = new File(dirPath);
-        log.debug("[loadAllProperties] - Path absoluto: {}", auxConfigDir.getAbsolutePath());
+        try {
+            log.debug("Verificando directorio: {} (ruta absoluta: {})", dirPath, configDirectory.getAbsolutePath());
 
-        if (auxConfigDir.exists() && auxConfigDir.isDirectory()) {
-            log.debug("[loadAllProperties] - El directorio es correcto.");
-            File[] files = auxConfigDir.listFiles((dir, name) -> name.endsWith(Constantes.PROPERTIES_EXT));
+            if (!configDirectory.exists()) {
+                log.warn("El directorio de configuración no existe: {}", configDirectory.getAbsolutePath());
+                propertiesMap = Collections.emptyMap();
+                return;
+            }
 
-            if (files != null) {
-                log.debug("[loadAllProperties] - Número de ficheros en el directorio: {}", files.length);
-                for (File file : files) {
-                    log.debug("[loadAllProperties] - Procesando fichero: {}", file.getName());
-                    try {
-                        Properties props = loadPropertiesFromFile(file);
-                        if (log.isDebugEnabled()) {
-                            printProperties(props);
-                        }
-                        tempMap.put(stripExtension(file.getName()), makeImmutable(props));
-                    } catch (PropertiesManagerException e) {
-                        log.debug("[loadAllProperties] No se pudo cargar '{}': {}", file.getName(), e.getMessage());
-                    }
+            if (!configDirectory.isDirectory()) {
+                throw new PropertiesManagerException("La ruta especificada no es un directorio: " + dirPath);
+            }
+
+            File[] propertyFiles = configDirectory.listFiles((dir, name) ->
+                    name.toLowerCase().endsWith(Constantes.PROPERTIES_EXT));
+
+            if (propertyFiles == null || propertyFiles.length == 0) {
+                log.warn("No se encontraron archivos .properties en el directorio: {}", dirPath);
+                propertiesMap = Collections.emptyMap();
+                return;
+            }
+
+            log.info("Encontrados {} archivos .properties para procesar", propertyFiles.length);
+
+            int loadedCount = 0;
+            int errorCount = 0;
+
+            for (File file : propertyFiles) {
+                try {
+                    log.debug("Procesando archivo: {}", file.getName());
+                    Properties props = loadPropertiesFromFile(file);
+                    String fileName = stripExtension(file.getName());
+                    tempMap.put(fileName, makeImmutable(props));
+                    loadedCount++;
+                    log.debug("Archivo cargado exitosamente: {} ({} propiedades)", file.getName(), props.size());
+                } catch (Exception e) {
+                    errorCount++;
+                    log.error("Error cargando archivo: {} - {}", file.getName(), e.getMessage());
                 }
             }
-        } else {
-            log.warn("[loadAllProperties] - El directorio '{}' no existe o no es un directorio válido.", dirPath);
-        }
 
-        propertiesMap = Collections.unmodifiableMap(tempMap);
-        log.debug("[loadAllProperties] - Cargados {} ficheros .properties desde '{}'", propertiesMap.size(), dirPath);
+            propertiesMap = Collections.unmodifiableMap(tempMap);
+            log.info("Carga completada: {} archivos cargados, {} errores, {} propiedades totales",
+                    loadedCount, errorCount, propertiesMap.size());
+
+        } catch (UnsupportedOperationException e) {
+            String errorMsg = "Error crítico durante la carga de propiedades desde: " + dirPath + ". Error: {}";
+            log.error(errorMsg, e.getMessage());
+            throw new PropertiesManagerException(errorMsg, e);
+        }
     }
 
     /**
-     * Carga propiedades desde un fichero dado.
+     * {@inheritDoc}
      *
-     * @param file archivo .properties
-     * @return Properties cargadas
-     * @throws PropertiesManagerException en caso de error
+     * @param fileNameWithoutExtension {@inheritDoc}
+     * @throws PropertiesManagerException {@inheritDoc}
+     * @since 1.0
      */
-    private Properties loadPropertiesFromFile(
-            File file
-    ) {
-        log.debug("[loadPropertiesFromFile] - Cargando todas las propiedades desde: {}", file.getName());
-        try (InputStream is = new FileInputStream(file)) {
-            log.debug("[loadPropertiesFromFile] - Fichero cargado correctamente.");
-            Properties props = new Properties();
-            props.load(is);
-            if (log.isDebugEnabled()) {
-                printProperties(props);
+    @Override
+    public void printProperties(String fileNameWithoutExtension) throws PropertiesManagerException {
+        validateFileName(fileNameWithoutExtension);
+
+        try {
+            Properties props = propertiesMap.get(fileNameWithoutExtension);
+            if (props == null) {
+                throw new PropertiesManagerException(
+                        String.format("Archivo no encontrado: %s%s", fileNameWithoutExtension, Constantes.PROPERTIES_EXT));
             }
-            return props;
-        } catch (IOException e) {
-            throw new PropertiesManagerException("Error cargando fichero: " + file.getName(), e);
+
+            log.info("=== Propiedades de {} ===", fileNameWithoutExtension + Constantes.PROPERTIES_EXT);
+            printPropertiesInternal(props);
+
+        } catch (PropertiesManagerException e) {
+            throw e;
+        } catch (Exception e) {
+            String errorMsg = "Error imprimiendo propiedades del archivo: " + fileNameWithoutExtension + ". Error: {}";
+            log.error(errorMsg, e.getMessage());
+            throw new PropertiesManagerException(errorMsg, e);
         }
     }
 
     /**
-     * Crea una copia inmutable del objeto Properties recibido,
-     * para evitar modificaciones posteriores.
+     * {@inheritDoc}
      *
-     * @param original Properties original mutable
-     * @return Properties inmutable que lanza excepción si se intenta modificar
+     * @throws PropertiesManagerException {@inheritDoc}
+     * @since 1.0
      */
-    private Properties makeImmutable(
-            Properties original
-    ) {
-        Properties copy = new Properties() {
+    @Override
+    public void printAllProperties() throws PropertiesManagerException {
+        try {
+            if (propertiesMap.isEmpty()) {
+                log.info("No hay archivos .properties cargados para mostrar");
+                return;
+            }
+
+            log.info("=== Imprimiendo todas las propiedades ({} archivos) ===", propertiesMap.size());
+            propertiesMap.forEach((fileName, props) -> {
+                try {
+                    log.info("--- Archivo: {} ---", fileName + Constantes.PROPERTIES_EXT);
+                    printPropertiesInternal(props);
+                } catch (Exception e) {
+                    log.error("Error imprimiendo propiedades del archivo: {}. Error: {}", fileName, e.getMessage());
+                }
+            });
+
+        } catch (Exception e) {
+            String errorMsg = "Error imprimiendo todas las propiedades. Error: {}";
+            log.error(errorMsg, e.getMessage());
+            throw new PropertiesManagerException(errorMsg, e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param fileNameWithoutExtension {@inheritDoc}
+     * @return {@inheritDoc}
+     * @throws PropertiesManagerException {@inheritDoc}
+     * @since 1.0
+     */
+    @Override
+    public Properties getProperties(String fileNameWithoutExtension) throws PropertiesManagerException {
+        validateFileName(fileNameWithoutExtension);
+
+        try {
+            Properties props = propertiesMap.get(fileNameWithoutExtension);
+
+            if (props == null) {
+                log.debug("Archivo no encontrado: {}, devolviendo Properties vacío", fileNameWithoutExtension);
+                return new Properties();
+            }
+
+            log.debug("Devolviendo propiedades inmutables para archivo: {} ({} propiedades)",
+                    fileNameWithoutExtension, props.size());
+            return makeImmutable(props);
+
+        } catch (UnsupportedOperationException e) {
+            String errorMsg = "Error obteniendo propiedades del archivo: " + fileNameWithoutExtension + ". Error: {}";
+            log.error(errorMsg, e.getMessage());
+            throw new PropertiesManagerException(errorMsg, e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>La búsqueda se realiza en el siguiente orden de prioridad:</p>
+     * <ol>
+     *   <li>Propiedades del archivo especificado</li>
+     *   <li>Variables de entorno del sistema</li>
+     *   <li>Propiedades del sistema Java</li>
+     * </ol>
+     *
+     * @param fileName {@inheritDoc}
+     * @param key      {@inheritDoc}
+     * @return {@inheritDoc}
+     * @throws PropertiesManagerException {@inheritDoc}
+     * @since 1.0
+     */
+    @Override
+    public String getProperty(String fileName, String key) throws PropertiesManagerException {
+        validateFileName(fileName);
+        validateKey(key);
+
+        try {
+            log.debug("Buscando propiedad: archivo='{}', clave='{}'", fileName, key);
+
+            // 1. Buscar en las propiedades del archivo
+            Properties props = propertiesMap.get(fileName);
+            if (props != null && props.containsKey(key)) {
+                String value = props.getProperty(key);
+                log.debug("Valor encontrado en archivo de propiedades: {}='{}'", key,
+                        isSensitiveKey(key) ? Constantes.KEY_SENSITIVE_VALUE : value);
+                return value;
+            }
+
+            // 2. Buscar en variables de entorno
+            String envValue = System.getenv(key);
+            if (envValue != null) {
+                log.debug("Valor encontrado en variables de entorno: {}='{}'", key,
+                        isSensitiveKey(key) ? Constantes.KEY_SENSITIVE_VALUE : envValue);
+                return envValue;
+            }
+
+            // 3. Buscar en propiedades del sistema
+            String sysValue = System.getProperty(key);
+            if (sysValue != null) {
+                log.debug("Valor encontrado en propiedades del sistema: {}='{}'", key,
+                        isSensitiveKey(key) ? Constantes.KEY_SENSITIVE_VALUE : sysValue);
+                return sysValue;
+            }
+
+            log.debug("Clave '{}' no encontrada en ninguna fuente para archivo '{}'", key, fileName);
+            return null;
+
+        } catch (Exception e) {
+            String errorMsg = String.format("Error obteniendo propiedad: archivo='%s', clave='%s'", fileName, key);
+            log.error(errorMsg, e);
+            throw new PropertiesManagerException(errorMsg, e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@inheritDoc}
+     * @throws PropertiesManagerException {@inheritDoc}
+     * @since 1.0
+     */
+    @Override
+    public Map<String, Properties> getAllProperties() throws PropertiesManagerException {
+        try {
+            log.debug("Devolviendo todas las propiedades ({} archivos cargados)", propertiesMap.size());
+            return propertiesMap;
+        } catch (Exception e) {
+            String errorMsg = "Error obteniendo todas las propiedades";
+            log.error(errorMsg, e);
+            throw new PropertiesManagerException(errorMsg, e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param fileName            {@inheritDoc}
+     * @param maskSensitiveValues {@inheritDoc}
+     * @return {@inheritDoc}
+     * @throws PropertiesManagerException {@inheritDoc}
+     * @since 2.0
+     */
+    @Override
+    public String exportPropertiesToJson(String fileName, boolean maskSensitiveValues)
+            throws PropertiesManagerException {
+        validateFileName(fileName);
+
+        try {
+            Properties props = propertiesMap.get(fileName);
+            if (props == null) {
+                throw new PropertiesManagerException(
+                        String.format("Archivo no encontrado para exportación: %s%s", fileName, Constantes.PROPERTIES_EXT));
+            }
+
+            log.debug("Exportando a JSON archivo: {} (máscara sensibles: {})", fileName, maskSensitiveValues);
+
+            Map<String, String> exportMap = props.entrySet().stream()
+                    .collect(Collectors.toMap(
+                            e -> e.getKey().toString(),
+                            e -> {
+                                String value = e.getValue().toString();
+                                return maskSensitiveValues && isSensitiveKey(e.getKey().toString())
+                                        ? Constantes.KEY_SENSITIVE_VALUE : value;
+                            }
+                    ));
+
+            String json = JSON_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(exportMap);
+            log.debug("JSON generado exitosamente para archivo: {} ({} propiedades)", fileName, exportMap.size());
+            return json;
+
+        } catch (JsonProcessingException e) {
+            String errorMsg = "Error generando JSON para archivo: " + fileName + ". Error: {}";
+            log.error(errorMsg, e.getMessage());
+            throw new PropertiesManagerException(errorMsg, e);
+        } catch (Exception e) {
+            String errorMsg = "Error exportando propiedades a JSON: " + fileName + ". Error: {}";
+            log.error(errorMsg, e.getMessage());
+            throw new PropertiesManagerException(errorMsg, e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param maskSensitiveValues {@inheritDoc}
+     * @return {@inheritDoc}
+     * @throws PropertiesManagerException {@inheritDoc}
+     * @since 2.0
+     */
+    @Override
+    public String exportAllPropertiesToJson(boolean maskSensitiveValues) throws PropertiesManagerException {
+        try {
+            log.debug("Exportando todas las propiedades a JSON (máscara sensibles: {})", maskSensitiveValues);
+
+            Map<String, Map<String, String>> allPropsMap = new HashMap<>();
+
+            propertiesMap.forEach((fileName, props) -> {
+                Map<String, String> filePropsMap = props.entrySet().stream()
+                        .collect(Collectors.toMap(
+                                e -> e.getKey().toString(),
+                                e -> {
+                                    String value = e.getValue().toString();
+                                    return maskSensitiveValues && isSensitiveKey(e.getKey().toString())
+                                            ? Constantes.KEY_SENSITIVE_VALUE : value;
+                                }
+                        ));
+                allPropsMap.put(fileName, filePropsMap);
+            });
+
+            String json = JSON_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(allPropsMap);
+            log.info("JSON generado exitosamente para todos los archivos ({} archivos, máscara: {})",
+                    allPropsMap.size(), maskSensitiveValues);
+            return json;
+
+        } catch (JsonProcessingException e) {
+            String errorMsg = "Error generando JSON para todas las propiedades. " + ". Error: {}";
+            log.error(errorMsg, e.getMessage());
+            throw new PropertiesManagerException(errorMsg, e);
+        } catch (Exception e) {
+            String errorMsg = "Error exportando todas las propiedades a JSON. " + ". Error: {}";
+            log.error(errorMsg, e.getMessage());
+            throw new PropertiesManagerException(errorMsg, e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param fileName     {@inheritDoc}
+     * @param requiredKeys {@inheritDoc}
+     * @return {@inheritDoc}
+     * @throws PropertiesManagerException {@inheritDoc}
+     * @since 2.0
+     */
+    @Override
+    public boolean validateRequiredKeys(String fileName, Set<String> requiredKeys)
+            throws PropertiesManagerException {
+        validateFileName(fileName);
+
+        try {
+            if (requiredKeys == null || requiredKeys.isEmpty()) {
+                log.debug("No hay claves requeridas para validar en archivo: {}", fileName);
+                return true;
+            }
+
+            Properties props = propertiesMap.get(fileName);
+            if (props == null) {
+                log.warn("Archivo no encontrado para validación: {}", fileName);
+                return false;
+            }
+
+            log.debug("Validando {} claves requeridas en archivo: {}", requiredKeys.size(), fileName);
+
+            Set<String> missingKeys = new HashSet<>();
+            for (String key : requiredKeys) {
+                if (!props.containsKey(key)) {
+                    missingKeys.add(key);
+                }
+            }
+
+            if (missingKeys.isEmpty()) {
+                log.debug("Validación exitosa: todas las claves requeridas están presentes en archivo: {}", fileName);
+                return true;
+            } else {
+                log.warn("Validación fallida en archivo '{}': claves faltantes: {}", fileName, missingKeys);
+                return false;
+            }
+
+        } catch (Exception e) {
+            String errorMsg = "Error validando claves requeridas en archivo: " + fileName + ". Error: {}";
+            log.error(errorMsg, e.getMessage());
+            throw new PropertiesManagerException(errorMsg, e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @throws PropertiesManagerException {@inheritDoc}
+     * @since 1.0
+     */
+    @Override
+    public synchronized void reload() throws PropertiesManagerException {
+        try {
+            log.info("Iniciando recarga de todas las propiedades");
+            Map<String, Properties> previousMap = propertiesMap;
+            loadAllProperties();
+            log.info("Recarga completada: {} archivos previamente cargados → {} archivos actuales",
+                    previousMap.size(), propertiesMap.size());
+        } catch (Exception e) {
+            String errorMsg = "Error durante la recarga de propiedades. Error: {}";
+            log.error(errorMsg, e.getMessage());
+            throw new PropertiesManagerException(errorMsg, e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param configDir {@inheritDoc}
+     * @throws PropertiesManagerException {@inheritDoc}
+     * @since 2.0
+     */
+    @Override
+    public void setConfigDir(String configDir) throws PropertiesManagerException {
+        try {
+            if (configDir == null || configDir.isBlank()) {
+                this.configDir = Constantes.DEFAULT_CONFIG_DIR;
+                log.info("Directorio de configuración establecido a valor por defecto: {}", this.configDir);
+            } else {
+                this.configDir = configDir.trim();
+                log.info("Directorio de configuración establecido: {}", this.configDir);
+            }
+        } catch (Exception e) {
+            String errorMsg = "Error estableciendo directorio de configuración: " + configDir;
+            log.error(errorMsg, e);
+            throw new PropertiesManagerException(errorMsg, e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@inheritDoc}
+     * @throws PropertiesManagerException {@inheritDoc}
+     * @since 2.0
+     */
+    @Override
+    public String getConfigDir() throws PropertiesManagerException {
+        try {
+            String currentDir = (this.configDir == null || this.configDir.isBlank())
+                    ? Constantes.DEFAULT_CONFIG_DIR : this.configDir;
+            log.trace("Devolviendo directorio de configuración: {}", currentDir);
+            return currentDir;
+        } catch (Exception e) {
+            String errorMsg = "Error obteniendo directorio de configuración. Error: {}";
+            log.error(errorMsg, e.getMessage());
+            throw new PropertiesManagerException(errorMsg, e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param key {@inheritDoc}
+     * @throws PropertiesManagerException {@inheritDoc}
+     * @since 2.0
+     */
+    @Override
+    public void setSecretKey(String key) throws PropertiesManagerException {
+        try {
+            if (key == null || key.isBlank()) {
+                this.secretKey = Constantes.DEFAULT_SECRET_KEY;
+                log.info("Clave secreta establecida a valor por defecto");
+            } else {
+                this.secretKey = key.trim();
+                log.info("Clave secreta establecida (longitud: {} caracteres)", key.length());
+            }
+        } catch (Exception e) {
+            String errorMsg = "Error estableciendo clave secreta. Error: {}";
+            log.error(errorMsg, e.getMessage());
+            throw new PropertiesManagerException(errorMsg, e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@inheritDoc}
+     * @throws PropertiesManagerException {@inheritDoc}
+     * @since 2.0
+     */
+    @Override
+    public String getSecretKey() throws PropertiesManagerException {
+        try {
+            String currentKey = (this.secretKey == null || this.secretKey.isBlank())
+                    ? Constantes.DEFAULT_SECRET_KEY : this.secretKey;
+            log.trace("Devolviendo clave secreta (longitud: {} caracteres)", currentKey.length());
+            return currentKey;
+        } catch (Exception e) {
+            String errorMsg = "Error obteniendo clave secreta. Error: {}";
+            log.error(errorMsg, e.getMessage());
+            throw new PropertiesManagerException(errorMsg, e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Las propiedades se almacenan de forma inmutable y thread-safe.
+     * Si el archivo ya existía, sus propiedades anteriores son completamente reemplazadas.</p>
+     *
+     * @param fileName   {@inheritDoc}
+     * @param properties {@inheritDoc}
+     * @throws PropertiesManagerException {@inheritDoc}
+     * @since 2.0
+     */
+    @Override
+    public synchronized void addProperties(String fileName, Properties properties)
+            throws PropertiesManagerException {
+        validateFileName(fileName);
+
+        if (properties == null) {
+            throw new PropertiesManagerException("Las propiedades no pueden ser nulas");
+        }
+
+        try {
+            // Crear copia inmutable de las propiedades
+            Properties immutableCopy = makeImmutable(properties);
+
+            // Crear nuevo mapa inmutable con las propiedades actualizadas
+            Map<String, Properties> newMap = new HashMap<>(this.propertiesMap);
+            Properties previousProps = newMap.put(fileName, immutableCopy);
+
+            this.propertiesMap = Collections.unmodifiableMap(newMap);
+
+            if (previousProps != null) {
+                log.info("Propiedades reemplazadas para archivo '{}': {} propiedades anteriores → {} nuevas",
+                        fileName, previousProps.size(), properties.size());
+            } else {
+                log.info("Propiedades añadidas para nuevo archivo '{}': {} propiedades",
+                        fileName, properties.size());
+            }
+
+        } catch (UnsupportedOperationException e) {
+            String errorMsg = "Error añadiendo propiedades para archivo: " + fileName;
+            log.error(errorMsg, e.getMessage());
+            throw new PropertiesManagerException(errorMsg, e);
+        }
+    }
+
+    // ================================
+    // MÉTODOS PRIVADOS DE UTILIDAD
+    // ================================
+
+    /**
+     * Carga propiedades desde un archivo del sistema de archivos.
+     *
+     * @param file El archivo .properties a cargar
+     * @return Properties cargadas del archivo
+     * @throws IOException              Si ocurre un error de E/S durante la carga
+     * @throws IllegalArgumentException Si el archivo es nulo, no existe, no es un archivo válido o no es legible
+     */
+    private Properties loadPropertiesFromFile(File file) throws IOException {
+        if (file == null || !file.exists() || !file.isFile() || !file.canRead()) {
+            throw new IllegalArgumentException("Archivo inválido o no legible: " +
+                    (file != null ? file.getAbsolutePath() : "null"));
+        }
+
+        log.debug("Cargando propiedades desde archivo: {} (tamaño: {} bytes)",
+                file.getName(), file.length());
+
+        Properties props = new Properties();
+        try (InputStream inputStream = new FileInputStream(file);
+             BufferedInputStream bufferedStream = new BufferedInputStream(inputStream)) {
+
+            props.load(bufferedStream);
+            log.debug("Archivo cargado exitosamente: {} ({} propiedades)", file.getName(), props.size());
+            return props;
+
+        } catch (IOException e) {
+            log.error("Error cargando archivo: {}. Error: {}", file.getName(), e.getMessage());
+            throw new IOException("Error cargando archivo: " + file.getName(), e);
+        }
+    }
+
+    /**
+     * Crea una copia inmutable del objeto Properties para prevenir modificaciones.
+     *
+     * @param original Properties original (mutable)
+     * @return Properties inmutable que lanza UnsupportedOperationException en operaciones de modificación
+     * @throws IllegalArgumentException Si el objeto Properties original es nulo
+     */
+    private Properties makeImmutable(Properties original) {
+        if (original == null) {
+            throw new IllegalArgumentException("Properties original no puede ser nulo");
+        }
+
+        Properties immutableProps = new Properties() {
             @Override
             public synchronized Object put(Object key, Object value) {
-                throw new UnsupportedOperationException("Propiedades inmutables");
+                throw new UnsupportedOperationException("Propiedades inmutables - operación put() no permitida");
             }
 
             @Override
             public synchronized Object remove(Object key) {
-                throw new UnsupportedOperationException("Propiedades inmutables");
+                throw new UnsupportedOperationException("Propiedades inmutables - operación remove() no permitida");
             }
 
             @Override
             public synchronized void clear() {
-                throw new UnsupportedOperationException("Propiedades inmutables");
+                throw new UnsupportedOperationException("Propiedades inmutables - operación clear() no permitida");
+            }
+
+            @Override
+            public synchronized void putAll(Map<?, ?> t) {
+                throw new UnsupportedOperationException("Propiedades inmutables - operación putAll() no permitida");
             }
         };
-        copy.putAll(original);
-        return copy;
+
+        // Copiar todas las propiedades del original
+        immutableProps.putAll(original);
+        log.trace("Creada copia inmutable de Properties ({} propiedades)", original.size());
+        return immutableProps;
     }
 
     /**
-     * Imprime en el log todas las propiedades de un fichero dado,
-     * ocultando los valores sensibles.
+     * Imprime las propiedades proporcionadas en el log, aplicando enmascaramiento
+     * a los valores de claves sensibles según la configuración actual.
      *
-     * @param fileNameWithoutExtension nombre del fichero sin extensión
-     * @throws PropertiesManagerException si el fichero no existe
+     * <p>Si el objeto Properties es nulo o está vacío, registra un mensaje informativo
+     * y termina la ejecución. Para cada propiedad válida, verifica si la clave es
+     * sensible y en ese caso oculta el valor utilizando el valor de enmascaramiento
+     * definido en las constantes.</p>
+     *
+     * @param props el objeto Properties a imprimir, puede ser {@code null} o vacío
      */
-    public void printProperties(
-            String fileNameWithoutExtension
-    ) {
-        Properties props = propertiesMap.get(fileNameWithoutExtension);
-        if (props == null) {
-            String msg = String.format("No se encontró el fichero: %s", fileNameWithoutExtension + Constantes.PROPERTIES_EXT);
-            throw new PropertiesManagerException(msg);
-        }
-        log.info(">>> {}", fileNameWithoutExtension + Constantes.PROPERTIES_EXT);
-        printProperties(props);
-    }
-
-    /**
-     * Imprime en el log todas las propiedades de todos los ficheros cargados.
-     * Si no hay ficheros, lo indica en log.
-     */
-    public void printAllProperties() {
-        if (propertiesMap.isEmpty()) {
-            log.debug("No se han cargado ficheros .properties.");
+    private void printPropertiesInternal(Properties props) {
+        if (props == null || props.isEmpty()) {
+            log.info("No properties to display");
             return;
         }
-        propertiesMap.forEach((
-                fileNameWithoutExtension, props) -> printProperties(fileNameWithoutExtension));
-    }
 
-    /**
-     * Devuelve una copia inmutable de las propiedades de un fichero.
-     *
-     * @param fileNameWithoutExtension nombre fichero sin extensión
-     * @return Properties inmutable (vacías si no existe fichero)
-     */
-    public Properties getProperties(
-            String fileNameWithoutExtension
-    ) {
-        log.debug("[getProperties] - Propiedades del fichero: {}", fileNameWithoutExtension);
-        Properties props = propertiesMap.get(fileNameWithoutExtension);
-        if (log.isDebugEnabled()) {
-            printProperties(props);
-        }
-        if (props == null) return new Properties();
-        return makeImmutable(props);
-    }
-
-    /**
-     * Obtiene el valor de una clave dada buscando en orden:
-     * primero en el fichero properties especificado, luego en variables de entorno,
-     * y finalmente en propiedades del sistema.
-     *
-     * @param fileName nombre del fichero sin extensión
-     * @param key clave a buscar
-     * @return valor encontrado o {@code null} si no existe
-     */
-    public String getProperty(
-            String fileName,
-            String key
-    ) {
-        log.debug("[getProperty] - Consulta de: <{},{}>", fileName, key);
-        Properties props = propertiesMap.get(fileName);
-        if (props != null && props.containsKey(key)) {
-            if (log.isDebugEnabled()) {
-                printProperties(props);
-            }
-            return props.getProperty(key);
-        }
-        String env = System.getenv(key);
-        if (env != null) return env;
-        return System.getProperty(key);
-    }
-
-    /**
-     * Devuelve el mapa completo e inmutable de propiedades cargadas.
-     *
-     * @return mapa con claves fichero y valores Properties inmutables
-     */
-    public Map<String, Properties> getAllProperties() {
-        return propertiesMap;
-    }
-
-    /**
-     * Determina si una clave debe considerarse sensible para ocultar su valor.
-     * La comparación no distingue mayúsculas y minúsculas.
-     *
-     * @param key clave a evaluar
-     * @return {@code true} si la clave es sensible; {@code false} en otro caso
-     */
-    private boolean isSensitiveKey(
-            String key
-    ) {
-        String keyLower = key.toLowerCase(Locale.ROOT);
-        for (String sensitive : sensitiveKeys) {
-            log.debug("[isSensitiveKey] Comprobando '{}' contra '{}'", keyLower, sensitive.toLowerCase(Locale.ROOT));
-            if (keyLower.contains(sensitive.toLowerCase(Locale.ROOT))) {
-                log.debug("[isSensitiveKey] La clave '{}' es considerada sensible.", key);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Exporta un fichero properties a formato JSON.
-     * Opcionalmente oculta valores sensibles.
-     *
-     * @param fileName nombre fichero sin extensión
-     * @param maskSensitiveValues {@code true} para ocultar valores sensibles
-     * @return cadena JSON con las propiedades
-     * @throws PropertiesManagerException si el fichero no existe o falla la conversión JSON
-     */
-    public String exportPropertiesToJson(
-            String fileName,
-            boolean maskSensitiveValues
-    ) {
-        Properties props = propertiesMap.get(fileName);
-        if (props == null) {
-            String msg = String.format("No se encontró el fichero: %s", fileName + Constantes.PROPERTIES_EXT);
-            throw new PropertiesManagerException(msg);
-        }
-
-        Map<String, String> map = props.entrySet().stream()
-                .collect(Collectors.toMap(
-                        e -> e.getKey().toString(),
-                        e -> {
-                            String val = e.getValue().toString();
-                            return maskSensitiveValues && isSensitiveKey(e.getKey().toString())
-                                    ? Constantes.KEY_SENSITIVE_VALUE : val;
-                        }
-                ));
-
-        try {
-            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(map);
-        } catch (JsonProcessingException e) {
-            String msg = "Error exportando propiedades a JSON.";
-            log.error(msg, e);
-            throw new PropertiesManagerException(msg, e);
-        }
-    }
-
-    /**
-     * Exporta todas las propiedades cargadas a formato JSON.
-     * Se pueden ocultar valores sensibles.
-     *
-     * @param maskSensitiveValues {@code true} para ocultar valores sensibles
-     * @return cadena JSON con todas las propiedades
-     * @throws PropertiesManagerException si falla la conversión JSON
-     */
-    public String exportAllPropertiesToJson(
-            boolean maskSensitiveValues
-    ) {
-        Map<String, Map<String, String>> allPropsMap = new HashMap<>();
-
-        propertiesMap.forEach((fileName, props) -> {
-            Map<String, String> map = props.entrySet().stream()
-                    .collect(Collectors.toMap(
-                            e -> e.getKey().toString(),
-                            e -> {
-                                String val = e.getValue().toString();
-                                return maskSensitiveValues && isSensitiveKey(e.getKey().toString())
-                                        ? Constantes.KEY_SENSITIVE_VALUE : val;
-                            }
-                    ));
-            allPropsMap.put(fileName, map);
+        props.forEach((key, value) -> {
+            String displayValue = isSensitiveKey(key.toString())
+                    ? Constantes.KEY_SENSITIVE_VALUE
+                    : value.toString();
+            log.info("{} = {}", key, displayValue);
         });
-
-        try {
-            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(allPropsMap);
-        } catch (JsonProcessingException e) {
-            String msg = "Error exportando todas las propiedades a JSON.";
-            log.error(msg, e);
-            throw new PropertiesManagerException(msg, e);
-        }
     }
 
     /**
-     * Valida que un fichero properties contenga todas las claves requeridas.
+     * Determina si una clave debe considerarse sensible basándose en la configuración
+     * actual de claves sensibles.
      *
-     * @param fileName nombre fichero sin extensión
-     * @param requiredKeys conjunto de claves obligatorias
-     * @return {@code true} si todas las claves están presentes; {@code false} en caso contrario
+     * <p>La evaluación se realiza comparando la clave proporcionada (convertida a
+     * minúsculas) con cada una de las claves sensibles configuradas. Si cualquiera
+     * de las claves sensibles está contenida en la clave evaluada, se considera
+     * sensible. La comparación es case-insensitive.</p>
+     *
+     * @param key la clave a evaluar, puede ser {@code null} o vacía
+     * @return {@code true} si la clave es considerada sensible, {@code false} en caso contrario
      */
-    public boolean validateRequiredKeys(
-            String fileName,
-            Set<String> requiredKeys
-    ) {
-        log.debug("[validateRequiredKeys] - fichero: {}", fileName);
-        log.debug("[validateRequiredKeys] - Conjunto de Key requeridas: {}", requiredKeys);
-        Properties props = propertiesMap.get(fileName);
-        if (props == null) {
-            log.debug("Fichero '{}' no encontrado para validación.", fileName);
+    private boolean isSensitiveKey(String key) {
+        if (key == null || key.isBlank()) {
             return false;
         }
-        if (log.isDebugEnabled()) {
-            printProperties(props);
-        }
-        for (String key : requiredKeys) {
-            if (!props.containsKey(key)) {
-                log.debug("Fichero '{}' no contiene la clave requerida: {}", fileName, key);
-                return false;
-            }
-        }
-        return true;
+
+        String keyLower = key.toLowerCase(Locale.ROOT);
+        return sensitiveKeys.stream()
+                .anyMatch(sensitive -> keyLower.contains(sensitive.toLowerCase(Locale.ROOT)));
     }
 
     /**
-     * Recarga todas las propiedades desde el directorio configurado en Constantes.CONFIG_DIR,
-     * actualizando el mapa interno de forma sincronizada.
-     */
-    public synchronized void reload(
-
-    ) {
-        log.debug("Recargando propiedades...");
-        loadAllProperties();
-    }
-
-    /**
-     * Extrae el nombre base de un fichero sin la extensión.
+     * Extrae el nombre base de un archivo eliminando su extensión.
      *
-     * @param fileName nombre del fichero con extensión
-     * @return nombre sin extensión
+     * <p>Busca el último punto (.) en el nombre del archivo y devuelve la parte
+     * anterior a este punto. Si no encuentra ningún punto, devuelve el nombre
+     * completo del archivo sin modificaciones.</p>
+     *
+     * @param fileName el nombre del archivo del cual extraer la extensión
+     * @return el nombre del archivo sin extensión
+     * @throws IllegalArgumentException si {@code fileName} es {@code null} o está vacío
      */
-    private String stripExtension(
-            String fileName
-    ) {
-        log.debug("[stripExtension]");
-        if (fileName == null) {
-            log.debug("[stripExtension] - El fichero es null.");
-            return "";
+    private String stripExtension(String fileName) {
+        if (fileName == null || fileName.isBlank()) {
+            throw new IllegalArgumentException("File name cannot be null or blank");
         }
-        log.debug("[stripExtension] - Eliminación de la extensión para el fichero: {}", fileName);
+
         int lastDot = fileName.lastIndexOf('.');
         if (lastDot == -1) {
-            log.debug("[stripExtension] - El fichero no tiene extensión: {}", fileName);
+            log.debug("File '{}' has no extension", fileName);
             return fileName;
         }
-        String nombreSinExtension =  fileName.substring(0, lastDot);
-        log.debug("[stripExtension] - Nombre del fichero sin extensión: {}", nombreSinExtension);
-        return nombreSinExtension;
+
+        String nameWithoutExtension = fileName.substring(0, lastDot);
+        log.debug("Stripped extension from '{}' -> '{}'", fileName, nameWithoutExtension);
+        return nameWithoutExtension;
     }
 
     /**
-     * Impresión de ficheros properties
-     * @param props El propertie a imprimir
-     */
-    public void printProperties(
-            Properties props
-    ) {
-        props.forEach((key, value) -> {
-            String val = isSensitiveKey(key.toString()) ? Constantes.KEY_SENSITIVE_VALUE : value.toString();
-            log.info("{} = {}", key, val);
-        });
-    }
-
-    /**
-     * Establece la ruta de configuración para cargar ficheros .properties.
+     * Valida que el nombre de archivo proporcionado sea válido para su uso
+     * en las operaciones del gestor de propiedades.
      *
-     * @param configDir ruta del directorio
-     */
-    public void setConfigDir(String configDir) {
-        this.configDir = (configDir == null || configDir.isBlank()) ? Constantes.DEFAULT_CONFIG_DIR : configDir;
-        log.debug("Ruta de configuración establecida: {}", this.configDir);
-    }
-
-    /**
-     * Establece la clave secreta usada para desencriptar valores sensibles.
+     * <p>Un nombre de archivo válido no puede ser {@code null}, vacío o contener
+     * solo espacios en blanco.</p>
      *
-     * @return clave secreta
+     * @param fileName el nombre del archivo a validar
+     * @throws PropertiesManagerException si el nombre del archivo es inválido
      */
-    public String getConfigDir() {
-        if (this.configDir == null || this.secretKey.isBlank()) {
-            log.debug("Devuelvo el directorio por defecto: {}", Constantes.DEFAULT_CONFIG_DIR);
-            return Constantes.DEFAULT_CONFIG_DIR;
+    private void validateFileName(String fileName) throws PropertiesManagerException {
+        if (fileName == null || fileName.isBlank()) {
+            throw new PropertiesManagerException("File name cannot be null or blank");
         }
-        log.debug("Devuelvo el directorio: {}", this.configDir);
-        return this.configDir;
     }
-
     /**
-     * Establece la clave secreta usada para desencriptar valores sensibles.
+     * Valida que la clave de propiedad proporcionada sea válida para su uso
+     * en las operaciones de búsqueda y manipulación de propiedades.
      *
-     * @param key clave secreta
-     */
-    public void setSecretKey(String key) {
-        this.secretKey = (key == null || key.isBlank()) ? Constantes.DEFAULT_SECRET_KEY : key;
-        log.debug("Clave secreta establecida: {}", key);
-    }
-
-    /**
-     * Establece la clave secreta usada para desencriptar valores sensibles.
+     * <p>Una clave válida no puede ser {@code null}, vacía o contener solo
+     * espacios en blanco.</p>
      *
-     * @return clave secreta
+     * @param key la clave de propiedad a validar
+     * @throws PropertiesManagerException si la clave es inválida
      */
-    public String getSecretKey() {
-        if (this.secretKey == null || this.secretKey.isBlank()) {
-            log.debug("Devuelvo la clave secreta por defecto: {}", Constantes.DEFAULT_SECRET_KEY);
-            return Constantes.DEFAULT_SECRET_KEY;
+    private void validateKey(String key) throws PropertiesManagerException {
+        if (key == null || key.isBlank()) {
+            throw new PropertiesManagerException("Key cannot be null or blank");
         }
-        log.debug("Devuelvo la clave secreta: {}", this.secretKey);
-        return this.secretKey;
     }
 }

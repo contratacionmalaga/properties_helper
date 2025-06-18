@@ -7,168 +7,161 @@ import java.util.Properties;
 import java.util.Set;
 
 /**
- * <p>Interfaz que define las operaciones para la gestión centralizada de ficheros .properties.</p>
+ * Interfaz que define las operaciones para la gestión centralizada de ficheros .properties.
  *
  * <p>Esta API permite:
  * <ul>
- * <li>Carga de múltiples ficheros .properties desde una carpeta externa o el classpath.</li>
- * <li>Acceso inmutable a las propiedades para evitar modificaciones accidentales.</li>
- * <li>Ocultamiento de claves sensibles en operaciones de impresión y exportación.</li>
- * <li>Exportación de propiedades a formato JSON.</li>
- * <li>Validación de la presencia de claves requeridas en un fichero.</li>
- * <li>Recarga segura y sincronizada de todas las propiedades cargadas.</li>
+ *   <li>Carga de múltiples ficheros .properties desde una carpeta externa o el classpath.</li>
+ *   <li>Acceso inmutable a las propiedades para evitar modificaciones accidentales.</li>
+ *   <li>Ocultamiento de claves sensibles en operaciones de impresión y exportación.</li>
+ *   <li>Exportación de propiedades a formato JSON.</li>
+ *   <li>Validación de la presencia de claves requeridas en un fichero.</li>
+ *   <li>Recarga segura y sincronizada de todas las propiedades cargadas.</li>
  * </ul>
+ * </p>
  *
  * @author Juan Antonio
- * @version 1.1
- * @since 2024-06-04
+ * @version 2.0
+ * @since 2024-06-18
  */
 public interface PropertiesManagerService {
 
     /**
-     * Establece las claves que deben considerarse sensibles y, por lo tanto,
-     * ser ocultadas (enmascaradas) durante la impresión o exportación.
+     * Establece las claves sensibles que deben ocultarse durante la impresión y exportación.
      *
-     * @param keys Un conjunto de cadenas que representan las claves sensibles.
-     * Si es {@code null} o vacío, no se considerará ninguna clave como sensible.
+     * @param keys Conjunto de claves sensibles. Si es {@code null} o vacío, no se ocultará ninguna.
+     * @throws PropertiesManagerException si ocurre un error al establecer las claves.
      */
-    void setSensitiveKeys(Set<String> keys);
+    void setSensitiveKeys(Set<String> keys) throws PropertiesManagerException;
 
     /**
-     * Carga todos los ficheros .properties desde un directorio especificado.
-     * Si el directorio no se encuentra o no es válido, intentará cargar recursos
-     * predefinidos desde el classpath (normalmente, dentro del JAR).
+     * Carga todos los ficheros .properties desde el directorio de configuración.
+     * Reemplaza cualquier carga previa.
      *
-     * <p>Este método reemplaza completamente cualquier conjunto de propiedades cargadas previamente.</p>
+     * @throws PropertiesManagerException si falla la carga desde el directorio o el classpath.
      */
-    void loadAllProperties();
+    void loadAllProperties() throws PropertiesManagerException;
 
     /**
-     * Imprime en el log las propiedades de un fichero específico,
-     * enmascarando los valores de las claves que han sido marcadas como sensibles.
+     * Imprime en el log las propiedades del fichero indicado, ocultando claves sensibles.
      *
-     * @param fileNameWithoutExtension El nombre del fichero de propiedades sin su extensión (ej. "app", "db").
-     * @throws PropertiesManagerException
-     * Si el fichero especificado no se encuentra entre las propiedades cargadas.
+     * @param fileNameWithoutExtension Nombre del fichero sin extensión (.properties).
+     * @throws PropertiesManagerException si el nombre es inválido o el fichero no está cargado.
      */
-    void printProperties(String fileNameWithoutExtension);
+    void printProperties(String fileNameWithoutExtension) throws PropertiesManagerException;
 
     /**
-     * Imprime en el log todas las propiedades de todos los ficheros cargados,
-     * aplicando el enmascaramiento para los valores sensibles.
-     * Si no hay ficheros cargados, se registrará un mensaje informativo.
-     */
-    void printAllProperties();
-
-    /**
-     * Devuelve una copia inmutable de las propiedades asociadas a un fichero específico.
-     * Las modificaciones a la {@code Properties} devuelta lanzarán una
-     * {@code UnsupportedOperationException}.
+     * Imprime en el log todas las propiedades de todos los ficheros cargados.
+     * Se aplica enmascaramiento a las claves sensibles.
      *
-     * @param fileNameWithoutExtension El nombre del fichero de propiedades sin su extensión (ej. "app", "db").
-     * @return Un objeto {@code Properties} inmutable que contiene las propiedades del fichero.
-     * Devuelve un objeto {@code Properties} vacío si el fichero no existe entre los cargados.
+     * @throws PropertiesManagerException si ocurre un error durante la operación.
      */
-    Properties getProperties(String fileNameWithoutExtension);
+    void printAllProperties() throws PropertiesManagerException;
 
     /**
-     * Obtiene el valor de una clave específica. La búsqueda se realiza en el siguiente orden:
-     * <ol>
-     * <li>En el fichero de propiedades especificado.</li>
-     * <li>En las variables de entorno del sistema.</li>
-     * <li>En las propiedades del sistema Java.</li>
-     * </ol>
+     * Devuelve una copia inmutable de las propiedades de un fichero específico.
      *
-     * @param fileName El nombre del fichero de propiedades sin su extensión donde buscar primero.
-     * @param key La clave cuyo valor se desea obtener.
-     * @return El valor de la clave como {@code String}, o {@code null} si la clave no se encuentra
-     * en ninguna de las fuentes.
+     * @param fileNameWithoutExtension Nombre del fichero sin extensión.
+     * @return Objeto {@code Properties} inmutable.
+     * @throws PropertiesManagerException si el fichero no está disponible o el nombre es inválido.
      */
-    String getProperty(String fileName, String key);
+    Properties getProperties(String fileNameWithoutExtension) throws PropertiesManagerException;
 
     /**
-     * Devuelve un mapa inmutable que contiene todos los conjuntos de propiedades cargadas.
-     * La clave del mapa es el nombre del fichero (sin extensión) y el valor es un objeto
-     * {@code Properties} inmutable con las propiedades de ese fichero.
+     * Devuelve el valor de una clave buscando en el fichero, variables de entorno o propiedades del sistema.
      *
-     * @return Un {@code Map} inmutable de {@code String} a {@code Properties}.
+     * @param fileName Nombre del fichero sin extensión.
+     * @param key Clave a buscar.
+     * @return Valor encontrado o {@code null} si no existe.
+     * @throws PropertiesManagerException si el nombre del fichero o la clave son inválidos.
      */
-    Map<String, Properties> getAllProperties();
+    String getProperty(String fileName, String key) throws PropertiesManagerException;
 
     /**
-     * Exporta las propiedades de un fichero específico a una cadena en formato JSON.
+     * Devuelve un mapa inmutable con todos los ficheros de propiedades cargados.
      *
-     * @param fileName El nombre del fichero de propiedades sin su extensión.
-     * @param maskSensitiveValues Si es {@code true}, los valores de las claves sensibles
-     * serán enmascarados en la salida JSON.
-     * @return Una cadena JSON que representa las propiedades del fichero.
-     * @throws PropertiesManagerException
-     * Si el fichero no se encuentra o si ocurre un error durante la conversión a JSON.
+     * @return Mapa con el nombre del fichero como clave y sus {@code Properties} como valor.
+     * @throws PropertiesManagerException si ocurre un error al acceder a los datos.
      */
-    String exportPropertiesToJson(String fileName, boolean maskSensitiveValues);
+    Map<String, Properties> getAllProperties() throws PropertiesManagerException;
 
     /**
-     * Exporta todas las propiedades cargadas (de todos los ficheros) a una cadena en formato JSON.
-     * La salida JSON será un mapa donde cada clave es el nombre de un fichero
-     * y su valor es un objeto JSON con las propiedades de ese fichero.
+     * Exporta las propiedades de un fichero específico en formato JSON.
      *
-     * @param maskSensitiveValues Si es {@code true}, los valores de las claves sensibles
-     * serán enmascarados en la salida JSON.
-     * @return Una cadena JSON que representa todas las propiedades cargadas.
-     * @throws PropertiesManagerException
-     * Si ocurre un error durante la conversión a JSON.
+     * @param fileName Nombre del fichero sin extensión.
+     * @param maskSensitiveValues Si {@code true}, se ocultan valores sensibles.
+     * @return Cadena JSON con las propiedades.
+     * @throws PropertiesManagerException si ocurre un error al procesar o exportar las propiedades.
      */
-    String exportAllPropertiesToJson(boolean maskSensitiveValues);
+    String exportPropertiesToJson(String fileName, boolean maskSensitiveValues)
+            throws PropertiesManagerException;
 
     /**
-     * Valida que un fichero de propiedades específico contenga todas las claves requeridas.
+     * Exporta todas las propiedades en formato JSON, agrupadas por fichero.
      *
-     * @param fileName El nombre del fichero de propiedades sin su extensión a validar.
-     * @param requiredKeys Un conjunto de cadenas que representan las claves que deben estar presentes.
-     * @return {@code true} si el fichero existe y contiene todas las claves requeridas;
-     * {@code false} en caso contrario (fichero no encontrado o falta alguna clave).
+     * @param maskSensitiveValues Si {@code true}, se ocultan valores sensibles.
+     * @return Cadena JSON que representa todos los ficheros y sus propiedades.
+     * @throws PropertiesManagerException si ocurre un error durante la conversión a JSON.
      */
-    boolean validateRequiredKeys(String fileName, Set<String> requiredKeys);
+    String exportAllPropertiesToJson(boolean maskSensitiveValues) throws PropertiesManagerException;
 
     /**
-     * Recarga todas las propiedades desde el directorio de configuración actualmente establecido.
-     * Este método es sincronizado para asegurar la consistencia.
-     */
-    void reload();
-
-    /**
-     * Establece la ruta del directorio desde donde se cargarán los ficheros .properties.
-     * Si la ruta proporcionada es {@code null} o una cadena vacía/en blanco,
-     * se restablecerá a la ruta de configuración por defecto.
+     * Verifica si un fichero contiene todas las claves requeridas.
      *
-     * @param configDir La nueva ruta del directorio de configuración.
+     * @param fileName Nombre del fichero sin extensión.
+     * @param requiredKeys Conjunto de claves que deben existir.
+     * @return {@code true} si todas las claves están presentes; {@code false} en caso contrario.
+     * @throws PropertiesManagerException si el fichero es inválido o no se puede acceder.
      */
-    void setConfigDir(String configDir);
+    boolean validateRequiredKeys(String fileName, Set<String> requiredKeys) throws PropertiesManagerException;
 
     /**
-     * Obtiene la ruta del directorio desde donde se cargarán los ficheros .properties.
-     * Si la ruta proporcionada es {@code null} o una cadena vacía/en blanco,
-     * se restablecerá a la ruta de configuración por defecto.
+     * Recarga todas las propiedades desde el directorio configurado.
      *
-     * @return El fichero de configuración definido.
+     * @throws PropertiesManagerException si falla la recarga.
      */
-    String getConfigDir();
+    void reload() throws PropertiesManagerException;
 
     /**
-     * Establece la clave secreta que se utilizará para desencriptar valores sensibles.
-     * Si la clave proporcionada es {@code null} o una cadena vacía/en blanco,
-     * se restablecerá a una clave por defecto (solo para desarrollo).
+     * Establece el directorio desde donde se cargarán los ficheros .properties.
+     * Si es {@code null} o vacío, se usa la ruta por defecto.
      *
-     * @param key La nueva clave secreta.
+     * @param configDir Ruta del directorio.
+     * @throws PropertiesManagerException si la ruta es inválida o no accesible.
      */
-    void setSecretKey(String key);
+    void setConfigDir(String configDir) throws PropertiesManagerException;
 
     /**
-     * Establece la clave secreta que se utilizará para desencriptar valores sensibles.
-     * Si la clave proporcionada es {@code null} o una cadena vacía/en blanco,
-     * se restablecerá a una clave por defecto (solo para desarrollo).
+     * Obtiene el directorio actualmente configurado para la carga de ficheros.
      *
-     * @return La clave secreta definida.
+     * @return Ruta del directorio de configuración.
+     * @throws PropertiesManagerException si ocurre un error al acceder a la configuración.
      */
-    String getSecretKey();
+    String getConfigDir() throws PropertiesManagerException;
+
+    /**
+     * Establece una clave secreta para desencriptar valores sensibles.
+     * Si es {@code null} o vacío, se establece una clave por defecto (modo desarrollo).
+     *
+     * @param key Clave secreta.
+     * @throws PropertiesManagerException si la clave es inválida.
+     */
+    void setSecretKey(String key) throws PropertiesManagerException;
+
+    /**
+     * Obtiene la clave secreta actualmente definida.
+     *
+     * @return Clave secreta.
+     * @throws PropertiesManagerException si no se puede acceder a la clave.
+     */
+    String getSecretKey() throws PropertiesManagerException;
+
+    /**
+     * Añade o reemplaza un conjunto de propiedades en memoria para un fichero específico.
+     *
+     * @param fileName Nombre del fichero sin extensión.
+     * @param properties Propiedades a almacenar.
+     * @throws PropertiesManagerException si los parámetros son inválidos o ocurre un error de almacenamiento.
+     */
+    void addProperties(String fileName, Properties properties) throws PropertiesManagerException;
 }
