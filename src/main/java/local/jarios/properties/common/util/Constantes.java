@@ -23,6 +23,9 @@ public final class Constantes {
     public static final String APP_PROPERTIES = "app";
 
     /** Nombre sin extensión del fichero app.properties */
+    public static final String APP_NON_EXISTS_PROPERTIES = "non.exists.file";
+
+    /** Nombre sin extensión del fichero app.properties */
     public static final String KEY_APP_NAME = "app.name";
 
     /** Nombre sin extensión del fichero app.properties */

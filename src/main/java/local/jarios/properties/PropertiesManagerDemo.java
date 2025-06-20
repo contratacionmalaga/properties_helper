@@ -227,20 +227,19 @@ public class PropertiesManagerDemo {
 
         try {
             // Validar claves requeridas que existen
-            Set<String> requiredAppKeys = Set.of("app.name", "app.version", "app.port");
-            boolean validApp = propertiesManager.validateRequiredKeys("application", requiredAppKeys);
-            log.info("Validación de 'application' con claves requeridas: {}", validApp);
+            Set<String> requiredAppKeys = Set.of(Constantes.KEY_APP_NAME);
+            boolean validApp = propertiesManager.validateRequiredKeys(Constantes.APP_PROPERTIES, requiredAppKeys);
+            log.info("Validación de '{}' con claves requeridas: {}", Constantes.APP_PROPERTIES, validApp);
 
             // Validar claves requeridas que no existen
-            Set<String> requiredMissingKeys = Set.of("app.name", "app.missing.key", "another.missing");
-            boolean validMissing = propertiesManager.validateRequiredKeys("application", requiredMissingKeys);
-            log.info("Validación de 'application' con claves faltantes: {}", validMissing);
+            Set<String> requiredMissingKeys = Set.of(Constantes.KEY_NON_EXISTS);
+            boolean validMissing = propertiesManager.validateRequiredKeys(Constantes.APP_PROPERTIES, requiredMissingKeys);
+            log.info("Validación de '{}' con claves faltantes: {}", Constantes.APP_PROPERTIES, validMissing);
 
             // Validar archivo inexistente
             try {
-                boolean validNonExistent = propertiesManager.validateRequiredKeys("nonexistent", requiredAppKeys);
+                boolean validNonExistent = propertiesManager.validateRequiredKeys(Constantes.APP_NON_EXISTS_PROPERTIES, requiredAppKeys);
                 log.info("Validación de archivo inexistente: {}", validNonExistent);
-                FinalDelPrograma.finalizar(TipoFinalEjecucion.ERROR);
             } catch (PropertiesManagerException e) {
                 log.error(e.getMessage());
                 FinalDelPrograma.finalizar(TipoFinalEjecucion.ERROR);
