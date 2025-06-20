@@ -27,6 +27,18 @@ public class Mensajes {
             "**** Final del log";
 
     /**
+     * Mensaje que indica que la ejecución ha finalizado correctamente.
+     */
+    public static final String FINAL_CORRECTO =
+            "La ejecución ha finalizado CORRECTAMENTE.";
+
+    /**
+     * Mensaje que indica que la ejecución ha finalizado con errores.
+     */
+    public static final String FINAL_ERROR =
+            "!!!! La ejecución ha finalizado con ERRORES !!!!";
+
+    /**
      * Constructor privado para evitar la instanciación de esta clase de utilidades.
      */
     private Mensajes() {

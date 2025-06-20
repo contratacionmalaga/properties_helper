@@ -2,6 +2,8 @@ package local.jarios.properties;
 
 import local.jarios.properties.api.PropertiesManagerService;
 import local.jarios.properties.api.PropertiesManagerServiceImpl;
+import local.jarios.properties.common.util.FinalDelPrograma;
+import local.jarios.properties.enums.TipoFinalEjecucion;
 import local.jarios.properties.exception.PropertiesManagerException;
 import lombok.extern.slf4j.Slf4j;
 
@@ -67,6 +69,7 @@ public class PropertiesManagerDemo {
 
         } catch (Exception e) {
             log.error("Error durante la ejecución del demo: {}", e.getMessage());
+            FinalDelPrograma.finalizar(TipoFinalEjecucion.ERROR);
         }
     }
 
@@ -97,6 +100,7 @@ public class PropertiesManagerDemo {
 
         } catch (PropertiesManagerException e) {
             log.error("Error en configuración: {}", e.getMessage());
+            FinalDelPrograma.finalizar(TipoFinalEjecucion.ERROR);
         }
     }
 
@@ -136,6 +140,7 @@ public class PropertiesManagerDemo {
 
         } catch (PropertiesManagerException e) {
             log.error("Error cargando propiedades: {}", e.getMessage());
+            FinalDelPrograma.finalizar(TipoFinalEjecucion.ERROR);
         }
     }
 
@@ -169,6 +174,7 @@ public class PropertiesManagerDemo {
 
         } catch (PropertiesManagerException e) {
             log.error("Error obteniendo propiedades: {}", e.getMessage());
+            FinalDelPrograma.finalizar(TipoFinalEjecucion.ERROR);
         }
     }
 
@@ -192,6 +198,7 @@ public class PropertiesManagerDemo {
 
         } catch (PropertiesManagerException e) {
             log.error("Error imprimiendo propiedades: {}", e.getMessage());
+            FinalDelPrograma.finalizar(TipoFinalEjecucion.ERROR);
         }
     }
 
@@ -219,6 +226,7 @@ public class PropertiesManagerDemo {
 
         } catch (PropertiesManagerException e) {
             log.error("Error exportando a JSON: {}", e.getMessage());
+            FinalDelPrograma.finalizar(TipoFinalEjecucion.ERROR);
         }
     }
 
@@ -243,8 +251,10 @@ public class PropertiesManagerDemo {
             try {
                 boolean validNonExistent = propertiesManager.validateRequiredKeys("nonexistent", requiredAppKeys);
                 log.info("Validación de archivo inexistente: {}", validNonExistent);
+                FinalDelPrograma.finalizar(TipoFinalEjecucion.ERROR);
             } catch (PropertiesManagerException e) {
                 log.info("Excepción esperada para archivo inexistente: {}", e.getMessage());
+                FinalDelPrograma.finalizar(TipoFinalEjecucion.ERROR);
             }
 
         } catch (PropertiesManagerException e) {
@@ -269,6 +279,7 @@ public class PropertiesManagerDemo {
 
         } catch (PropertiesManagerException e) {
             log.error("Error durante la recarga: {}", e.getMessage());
+            FinalDelPrograma.finalizar(TipoFinalEjecucion.ERROR);
         }
     }
 
@@ -284,6 +295,7 @@ public class PropertiesManagerDemo {
             log.error("Se esperaba una excepción para archivo inexistente");
         } catch (PropertiesManagerException e) {
             log.info("Excepción esperada: {}", e.getMessage());
+            FinalDelPrograma.finalizar(TipoFinalEjecucion.ERROR);
         }
 
         // Intentar usar nombre de archivo inválido
@@ -292,6 +304,7 @@ public class PropertiesManagerDemo {
             log.error("Se esperaba una excepción para nombre vacío");
         } catch (PropertiesManagerException e) {
             log.info("Excepción esperada: {}", e.getMessage());
+            FinalDelPrograma.finalizar(TipoFinalEjecucion.ERROR);
         }
 
         // Intentar configurar directorio inválido
@@ -299,6 +312,7 @@ public class PropertiesManagerDemo {
             propertiesManager.setConfigDir("/ruta/inexistente/completamente");
         } catch (PropertiesManagerException e) {
             log.info("Excepción esperada para directorio inválido: {}", e.getMessage());
+            FinalDelPrograma.finalizar(TipoFinalEjecucion.ERROR);
         }
     }
 
@@ -335,6 +349,7 @@ public class PropertiesManagerDemo {
 
         } catch (PropertiesManagerException e) {
             log.error("Error ejecutando la demo: {}", e.getMessage());
+            FinalDelPrograma.finalizar(TipoFinalEjecucion.ERROR);
         }
     }
 }

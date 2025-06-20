@@ -1,6 +1,6 @@
 package local.jarios.properties.common.util;
 
-import local.jarios.enums.TipoFinalEjecucion;
+import local.jarios.properties.enums.TipoFinalEjecucion;
 import lombok.extern.slf4j.Slf4j;
 
 /**
