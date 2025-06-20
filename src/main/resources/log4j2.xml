@@ -3,13 +3,13 @@
     <Appenders>
         <!-- Consola -->
         <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p [%t] %-25c{1}:%-4L - %m%n" />
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p [%t] %-30c{1}:%-4L - %m%n" />
         </Console>
 
         <!-- Archivos de Registro -->
         <!-- Registro generado por el Aplicativo -->
         <File name="File" fileName="logs/local-log4j2-${date:yyyy-MM-dd_HH-mm-ss}-log.log">
-            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p [%t] %-25c{1}:%-4L - %m%n" />
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p [%t] %-30c{1}:%-4L - %m%n" />
         </File>
     </Appenders>
 

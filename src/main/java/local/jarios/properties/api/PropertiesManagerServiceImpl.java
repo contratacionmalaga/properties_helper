@@ -94,7 +94,7 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
     private PropertiesManagerServiceImpl() {
         this.configDir = Constantes.DEFAULT_CONFIG_DIR;
         this.secretKey = Constantes.DEFAULT_SECRET_KEY;
-        log.debug("PropertiesManagerService inicializado con directorio: {} y clave secreta por defecto", configDir);
+        log.debug("[PropertiesManagerServiceImpl] - PropertiesManagerService inicializado con directorio: {} y clave secreta por defecto", configDir);
     }
 
     /**
@@ -104,7 +104,7 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      * @since 1.0
      */
     public static PropertiesManagerService getInstance() {
-        log.trace("Solicitada instancia singleton de PropertiesManagerService");
+        log.trace("[setSensitiveKeys] - Solicitada instancia singleton de PropertiesManagerService");
         return INSTANCE;
     }
 
@@ -120,15 +120,33 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      */
     @Override
     public void setSensitiveKeys(Set<String> keys) throws PropertiesManagerException {
+
+        log.debug("[setSensitiveKeys] -");
+
         try {
             this.sensitiveKeys = (keys == null) ? Collections.emptySet() : Set.copyOf(keys);
-            log.debug("Configuradas {} claves sensibles para ocultamiento", this.sensitiveKeys.size());
-            log.debug("Claves sensibles establecidas: {}", this.sensitiveKeys);
+            log.debug("[setSensitiveKeys] - Configuradas {} claves sensibles para ocultamiento", this.sensitiveKeys.size());
+            log.debug("[setSensitiveKeys] - Claves sensibles establecidas: {}", this.sensitiveKeys);
         } catch (Exception e) {
-            String errorMsg = "Error al establecer claves sensibles";
+            String errorMsg = String.format("[setSensitiveKeys] - Error al establecer claves sensibles. Error: %s", e.getMessage());
             log.error(errorMsg, e);
             throw new PropertiesManagerException(errorMsg, e);
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Obtiene el conjunto de claves sensibles definidas.</p>
+     *
+     * @return Conjunto de claves sensibles
+     */
+    @Override
+    public Set<String> getSensitiveKeys() {
+
+        log.debug("[getSensitiveKeys] -");
+
+        return this.sensitiveKeys;
     }
 
     /**
@@ -143,59 +161,79 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      */
     @Override
     public synchronized void loadAllProperties() throws PropertiesManagerException {
+
+        log.debug("[loadAllProperties] -");
+
         String dirPath = getConfigDir();
-        log.debug("Iniciando carga de propiedades desde directorio: {}", dirPath);
+        log.debug("[loadAllProperties] - Determino el directorio de configuración (defindo | por defecto): {}", dirPath);
 
         Map<String, Properties> tempMap = new HashMap<>();
+        log.debug("[loadAllProperties] - Creado el objeto Map<String, Properties> correctamente");
+
         File configDirectory = new File(dirPath);
+        log.debug("[loadAllProperties] - Creado el objeto File. Ruta absoluta: {}", configDirectory.getAbsolutePath());
 
         try {
-            log.debug("Verificando directorio: {} (ruta absoluta: {})", dirPath, configDirectory.getAbsolutePath());
+            log.debug("[loadAllProperties] - Verificando directorio: {} (ruta absoluta: {})", dirPath, configDirectory.getAbsolutePath());
 
             if (!configDirectory.exists()) {
-                log.warn("El directorio de configuración no existe: {}", configDirectory.getAbsolutePath());
+                log.debug("[loadAllProperties] - El directorio de configuración no existe.");
+
                 propertiesMap = Collections.emptyMap();
+                log.debug("[loadAllProperties] - Establezco propertiesMap = Collections.emptyMap().");
                 return;
             }
 
             if (!configDirectory.isDirectory()) {
-                throw new PropertiesManagerException("La ruta especificada no es un directorio: " + dirPath);
+                throw new PropertiesManagerException("[loadAllProperties] - La ruta especificada no es un directorio: " + dirPath);
             }
+
+            log.debug("[loadAllProperties] - El directorio de configuración existe.");
 
             File[] propertyFiles = configDirectory.listFiles((dir, name) ->
                     name.toLowerCase().endsWith(Constantes.PROPERTIES_EXT));
 
             if (propertyFiles == null || propertyFiles.length == 0) {
-                log.warn("No se encontraron archivos .properties en el directorio: {}", dirPath);
+                log.warn("[loadAllProperties] - No se encontraron archivos .properties en el directorio: {}", dirPath);
                 propertiesMap = Collections.emptyMap();
                 return;
             }
 
-            log.debug("Encontrados {} archivos .properties para procesar", propertyFiles.length);
+            log.debug("[loadAllProperties] - Encontrados {} archivos .properties para procesar", propertyFiles.length);
 
             int loadedCount = 0;
             int errorCount = 0;
 
             for (File file : propertyFiles) {
                 try {
-                    log.debug("Procesando archivo: {}", file.getName());
+                    log.debug("[loadAllProperties] - Procesando archivo: {}", file.getName());
+
                     Properties props = loadPropertiesFromFile(file);
+                    log.debug("[loadAllProperties] - Cargadas todas las propiedades asociada al fichero: {}", file.getName());
+
                     String fileName = stripExtension(file.getName());
-                    tempMap.put(fileName, makeImmutable(props));
+                    log.debug("[loadAllProperties] - Eliminación de la extensión al fichero: {}. Fichero sin extensión: {}", file.getName(), fileName);
+
+                    tempMap.put(fileName, props);
+                    log.debug("[loadAllProperties] - Almacenados los datos en Map<String, Properties> correctamente.");
+
+                    log.debug("[loadAllProperties] - Nº de ficheros cargados: {}", loadedCount);
                     loadedCount++;
-                    log.debug("Archivo cargado exitosamente: {} ({} propiedades)", file.getName(), props.size());
+
                 } catch (Exception e) {
                     errorCount++;
-                    log.error("Error cargando archivo: {} - {}", file.getName(), e.getMessage());
+                    log.error("[loadAllProperties] - Error cargando archivo: {} - {}", file.getName(), e.getMessage());
                 }
             }
 
             propertiesMap = Collections.unmodifiableMap(tempMap);
-            log.debug("Carga completada: {} archivos cargados, {} errores, {} propiedades totales",
+            log.debug("[loadAllProperties] - Almacenada la información en el objeto propertiesMap.");
+
+            log.debug("[loadAllProperties] - Carga completada: {} archivos cargados, {} errores, {} propiedades totales",
                     loadedCount, errorCount, propertiesMap.size());
 
         } catch (UnsupportedOperationException e) {
-            String errorMsg = "Error crítico durante la carga de propiedades desde: " + dirPath + ". Error: {}";
+            String errorMsg = "[loadAllProperties] - Error crítico durante la carga de propiedades desde: " + dirPath + ". Error: {}";
             log.error(errorMsg, e.getMessage());
             throw new PropertiesManagerException(errorMsg, e);
         }
@@ -210,6 +248,8 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      */
     @Override
     public void printProperties(String fileNameWithoutExtension) throws PropertiesManagerException {
+
+        log.debug("[printProperties] -.");
         validateFileName(fileNameWithoutExtension);
 
         try {
@@ -284,7 +324,7 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
 
             log.debug("Devolviendo propiedades inmutables para archivo: {} ({} propiedades)",
                     fileNameWithoutExtension, props.size());
-            return makeImmutable(props);
+            return props;
 
         } catch (UnsupportedOperationException e) {
             String errorMsg = "Error obteniendo propiedades del archivo: " + fileNameWithoutExtension + ". Error: {}";
@@ -361,8 +401,9 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      */
     @Override
     public Map<String, Properties> getAllProperties() throws PropertiesManagerException {
+        log.debug("[getAllProperties] - ");
         try {
-            log.debug("Devolviendo todas las propiedades ({} archivos cargados)", propertiesMap.size());
+            log.debug("[getAllProperties] - Devolviendo todas las propiedades ({} archivos cargados)", propertiesMap.size());
             return propertiesMap;
         } catch (Exception e) {
             String errorMsg = "Error obteniendo todas las propiedades";
@@ -543,16 +584,17 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      */
     @Override
     public void setConfigDir(String configDir) throws PropertiesManagerException {
+        log.debug("[setConfigDir] -");
         try {
             if (configDir == null || configDir.isBlank()) {
                 this.configDir = Constantes.DEFAULT_CONFIG_DIR;
-                log.debug("Directorio de configuración establecido a valor por defecto: {}", this.configDir);
+                log.debug("[setConfigDir] - Directorio de configuración establecido a valor por defecto: {}", this.configDir);
             } else {
                 this.configDir = configDir.trim();
-                log.debug("Directorio de configuración establecido: {}", this.configDir);
+                log.debug("[setConfigDir] - Directorio de configuración establecido: {}", this.configDir);
             }
         } catch (Exception e) {
-            String errorMsg = "Error estableciendo directorio de configuración: " + configDir;
+            String errorMsg = "[setConfigDir] - Error estableciendo directorio de configuración: %s. Error: %s" + configDir;
             log.error(errorMsg, e);
             throw new PropertiesManagerException(errorMsg, e);
         }
@@ -567,13 +609,15 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      */
     @Override
     public String getConfigDir() throws PropertiesManagerException {
+
+        log.debug("[getConfigDir] -");
         try {
             String currentDir = (this.configDir == null || this.configDir.isBlank())
                     ? Constantes.DEFAULT_CONFIG_DIR : this.configDir;
-            log.debug("Devolviendo directorio de configuración: {}", currentDir);
+            log.debug("[getConfigDir] - Directorio de configuración definido: {}", currentDir);
             return currentDir;
         } catch (Exception e) {
-            String errorMsg = "Error obteniendo directorio de configuración. Error: {}";
+            String errorMsg = "[getConfigDir] - Error obteniendo directorio de configuración. Error: {}";
             log.error(errorMsg, e.getMessage());
             throw new PropertiesManagerException(errorMsg, e);
         }
@@ -638,19 +682,21 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
     @Override
     public synchronized void addProperties(String fileName, Properties properties)
             throws PropertiesManagerException {
+
+        log.debug("[addProperties] -");
+
         validateFileName(fileName);
 
         if (properties == null) {
-            throw new PropertiesManagerException("Las propiedades no pueden ser nulas");
+            String msg = "[addProperties] - El objeto properties es nulo.";
+            log.debug(msg);
+            throw new PropertiesManagerException(msg);
         }
 
         try {
-            // Crear copia inmutable de las propiedades
-            Properties immutableCopy = makeImmutable(properties);
-
             // Crear nuevo mapa inmutable con las propiedades actualizadas
             Map<String, Properties> newMap = new HashMap<>(this.propertiesMap);
-            Properties previousProps = newMap.put(fileName, immutableCopy);
+            Properties previousProps = newMap.put(fileName, properties);
 
             this.propertiesMap = Collections.unmodifiableMap(newMap);
 
@@ -678,70 +724,35 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      *
      * @param file El archivo .properties a cargar
      * @return Properties cargadas del archivo
-     * @throws IOException              Si ocurre un error de E/S durante la carga
      * @throws IllegalArgumentException Si el archivo es nulo, no existe, no es un archivo válido o no es legible
      */
-    private Properties loadPropertiesFromFile(File file) throws IOException {
+    private Properties loadPropertiesFromFile(File file) {
+
+        log.debug("[loadPropertiesFromFile] -");
+
         if (file == null || !file.exists() || !file.isFile() || !file.canRead()) {
-            throw new IllegalArgumentException("Archivo inválido o no legible: " +
+            throw new IllegalArgumentException("[loadPropertiesFromFile] - Archivo inválido o no legible: " +
                     (file != null ? file.getAbsolutePath() : "null"));
         }
 
-        log.debug("Cargando propiedades desde archivo: {} (tamaño: {} bytes)",
+        log.debug("[loadPropertiesFromFile] - Cargando propiedades desde archivo: {} (tamaño: {} bytes)",
                 file.getName(), file.length());
 
         Properties props = new Properties();
+        log.debug("[loadPropertiesFromFile] - Creación de un objeto Properties correctamente.");
+
         try (InputStream inputStream = new FileInputStream(file);
              BufferedInputStream bufferedStream = new BufferedInputStream(inputStream)) {
 
             props.load(bufferedStream);
-            log.debug("Archivo cargado exitosamente: {} ({} propiedades)", file.getName(), props.size());
+            log.debug("[loadPropertiesFromFile] - Archivo cargado exitosamente: {} ({} propiedades)", file.getName(), props.size());
             return props;
 
         } catch (IOException e) {
-            log.error("Error cargando archivo: {}. Error: {}", file.getName(), e.getMessage());
-            throw new IOException("Error cargando archivo: " + file.getName(), e);
+            String errorMsg = String.format("[loadPropertiesFromFile] - Error cargando archivo: %s. Error: %s", file.getName(), e.getMessage());
+            log.error(errorMsg);
+            throw new PropertiesManagerException(errorMsg, e);
         }
-    }
-
-    /**
-     * Crea una copia inmutable del objeto Properties para prevenir modificaciones.
-     *
-     * @param original Properties original (mutable)
-     * @return Properties inmutable que lanza UnsupportedOperationException en operaciones de modificación
-     * @throws IllegalArgumentException Si el objeto Properties original es nulo
-     */
-    private Properties makeImmutable(Properties original) {
-        if (original == null) {
-            throw new IllegalArgumentException("Properties original no puede ser nulo");
-        }
-
-        Properties immutableProps = new Properties() {
-            @Override
-            public synchronized Object put(Object key, Object value) {
-                throw new UnsupportedOperationException("Propiedades inmutables - operación put() no permitida");
-            }
-
-            @Override
-            public synchronized Object remove(Object key) {
-                throw new UnsupportedOperationException("Propiedades inmutables - operación remove() no permitida");
-            }
-
-            @Override
-            public synchronized void clear() {
-                throw new UnsupportedOperationException("Propiedades inmutables - operación clear() no permitida");
-            }
-
-            @Override
-            public synchronized void putAll(Map<?, ?> t) {
-                throw new UnsupportedOperationException("Propiedades inmutables - operación putAll() no permitida");
-            }
-        };
-
-        // Copiar todas las propiedades del original
-        immutableProps.putAll(original);
-        log.trace("Creada copia inmutable de Properties ({} propiedades)", original.size());
-        return immutableProps;
     }
 
     /**
@@ -756,8 +767,11 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      * @param props el objeto Properties a imprimir, puede ser {@code null} o vacío
      */
     private void printPropertiesInternal(Properties props) {
+
+        log.debug("[printPropertiesInternal] -");
+
         if (props == null || props.isEmpty()) {
-            log.debug("No properties to display");
+            log.debug("[printPropertiesInternal] - No properties to display");
             return;
         }
 
@@ -765,7 +779,7 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
             String displayValue = isSensitiveKey(key.toString())
                     ? Constantes.KEY_SENSITIVE_VALUE
                     : value.toString();
-            log.debug("{} = {}", key, displayValue);
+            log.info("  - {} = {}", key, displayValue);
         });
     }
 
@@ -782,6 +796,9 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      * @return {@code true} si la clave es considerada sensible, {@code false} en caso contrario
      */
     private boolean isSensitiveKey(String key) {
+
+        log.debug("[isSensitiveKey] -");
+
         if (key == null || key.isBlank()) {
             return false;
         }
@@ -803,18 +820,20 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      * @throws IllegalArgumentException si {@code fileName} es {@code null} o está vacío
      */
     private String stripExtension(String fileName) {
+
+        log.debug("[stripExtension] -");
         if (fileName == null || fileName.isBlank()) {
-            throw new IllegalArgumentException("File name cannot be null or blank");
+            throw new PropertiesManagerException("[stripExtension] File name cannot be null or blank");
         }
 
         int lastDot = fileName.lastIndexOf('.');
         if (lastDot == -1) {
-            log.debug("File '{}' has no extension", fileName);
+            log.debug("[stripExtension] - File '{}' has no extension", fileName);
             return fileName;
         }
 
         String nameWithoutExtension = fileName.substring(0, lastDot);
-        log.debug("Stripped extension from '{}' -> '{}'", fileName, nameWithoutExtension);
+        log.debug("[stripExtension] - Stripped extension from '{}' -> '{}'", fileName, nameWithoutExtension);
         return nameWithoutExtension;
     }
 
@@ -829,8 +848,11 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      * @throws PropertiesManagerException si el nombre del archivo es inválido
      */
     private void validateFileName(String fileName) throws PropertiesManagerException {
+
+        log.debug("[validateFileName] -");
+
         if (fileName == null || fileName.isBlank()) {
-            throw new PropertiesManagerException("File name cannot be null or blank");
+            throw new PropertiesManagerException("[validateFileName] - File name cannot be null or blank");
         }
     }
     /**
@@ -844,8 +866,10 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      * @throws PropertiesManagerException si la clave es inválida
      */
     private void validateKey(String key) throws PropertiesManagerException {
+
+        log.debug("[validateKey] -");
         if (key == null || key.isBlank()) {
-            throw new PropertiesManagerException("Key cannot be null or blank");
+            throw new PropertiesManagerException("[validateKey] - Key cannot be null or blank");
         }
     }
 }

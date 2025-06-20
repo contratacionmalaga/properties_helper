@@ -22,6 +22,12 @@ public final class Constantes {
     /** Nombre sin extensión del fichero app.properties */
     public static final String APP_PROPERTIES = "app";
 
+    /** Nombre sin extensión del fichero app.properties */
+    public static final String KEY_APP_NAME = "app.name";
+
+    /** Nombre sin extensión del fichero app.properties */
+    public static final String KEY_NON_EXISTS = "non.exists.key";
+
     /** Nombre sin extensión del fichero email.properties */
     public static final String EMAIL_PROPERTIES = "email";
 

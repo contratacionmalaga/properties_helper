@@ -33,6 +33,13 @@ public interface PropertiesManagerService {
     void setSensitiveKeys(Set<String> keys) throws PropertiesManagerException;
 
     /**
+     * Obtiene el conjunto de claves sensibles definidas.
+     *
+     * @return Conjunto de claves sensibles.
+     */
+    Set<String> getSensitiveKeys();
+
+    /**
      * Carga todos los ficheros .properties desde el directorio de configuración.
      * Reemplaza cualquier carga previa.
      *
