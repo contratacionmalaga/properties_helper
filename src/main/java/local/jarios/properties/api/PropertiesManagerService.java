@@ -2,6 +2,7 @@ package local.jarios.properties.api;
 
 import local.jarios.properties.exception.PropertiesManagerException;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -38,6 +39,13 @@ public interface PropertiesManagerService {
      * @return Conjunto de claves sensibles.
      */
     Set<String> getSensitiveKeys();
+
+    /**
+     * Obtiene el conjunto de claves sensibles definidas.
+     *
+     * @return Conjunto de claves sensibles.
+     */
+    List<String> getListFiles();
 
     /**
      * Carga todos los ficheros .properties desde el directorio de configuración.

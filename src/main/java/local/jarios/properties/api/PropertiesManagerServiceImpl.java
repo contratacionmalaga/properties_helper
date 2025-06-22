@@ -162,8 +162,6 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
     @Override
     public synchronized void loadAllProperties() throws PropertiesManagerException {
 
-        log.debug("[loadAllProperties] -");
-
         String dirPath = getConfigDir();
         log.debug("[loadAllProperties] - Determino el directorio de configuración (defindo | por defecto): {}", dirPath);
 
@@ -249,7 +247,6 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
     @Override
     public void printProperties(String fileNameWithoutExtension) throws PropertiesManagerException {
 
-        log.debug("[printProperties] -.");
         validateFileName(fileNameWithoutExtension);
 
         try {
@@ -269,6 +266,27 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
             log.error(errorMsg, e.getMessage());
             throw new PropertiesManagerException(errorMsg, e);
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @throws PropertiesManagerException {@inheritDoc}
+     * @since 1.0
+     */
+    @Override
+    public List<String> getListFiles() throws PropertiesManagerException {
+
+        List<String> listFicheros = new ArrayList<>();
+
+        if (propertiesMap.isEmpty()) {
+            log.debug("[getListFiles] - No hay archivos .properties cargados para mostrar");
+            return listFicheros;
+        }
+
+        listFicheros = new ArrayList<>(propertiesMap.keySet());
+        log.debug("[getListFiles] - Devuelvo la lista: {}", listFicheros);
+        return new ArrayList<>(propertiesMap.keySet());
     }
 
     /**
@@ -584,7 +602,6 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      */
     @Override
     public void setConfigDir(String configDir) throws PropertiesManagerException {
-        log.debug("[setConfigDir] -");
         try {
             if (configDir == null || configDir.isBlank()) {
                 this.configDir = Constantes.DEFAULT_CONFIG_DIR;
@@ -609,8 +626,6 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      */
     @Override
     public String getConfigDir() throws PropertiesManagerException {
-
-        log.debug("[getConfigDir] -");
         try {
             String currentDir = (this.configDir == null || this.configDir.isBlank())
                     ? Constantes.DEFAULT_CONFIG_DIR : this.configDir;
@@ -682,11 +697,7 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
     @Override
     public synchronized void addProperties(String fileName, Properties properties)
             throws PropertiesManagerException {
-
-        log.debug("[addProperties] -");
-
         validateFileName(fileName);
-
         if (properties == null) {
             String msg = "[addProperties] - El objeto properties es nulo.";
             log.debug(msg);
@@ -727,9 +738,6 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      * @throws IllegalArgumentException Si el archivo es nulo, no existe, no es un archivo válido o no es legible
      */
     private Properties loadPropertiesFromFile(File file) {
-
-        log.debug("[loadPropertiesFromFile] -");
-
         if (file == null || !file.exists() || !file.isFile() || !file.canRead()) {
             throw new IllegalArgumentException("[loadPropertiesFromFile] - Archivo inválido o no legible: " +
                     (file != null ? file.getAbsolutePath() : "null"));
@@ -767,9 +775,6 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      * @param props el objeto Properties a imprimir, puede ser {@code null} o vacío
      */
     private void printPropertiesInternal(Properties props) {
-
-        log.debug("[printPropertiesInternal] -");
-
         if (props == null || props.isEmpty()) {
             log.debug("[printPropertiesInternal] - No properties to display");
             return;
@@ -796,9 +801,6 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      * @return {@code true} si la clave es considerada sensible, {@code false} en caso contrario
      */
     private boolean isSensitiveKey(String key) {
-
-        log.debug("[isSensitiveKey] -");
-
         if (key == null || key.isBlank()) {
             return false;
         }
@@ -820,8 +822,6 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      * @throws IllegalArgumentException si {@code fileName} es {@code null} o está vacío
      */
     private String stripExtension(String fileName) {
-
-        log.debug("[stripExtension] -");
         if (fileName == null || fileName.isBlank()) {
             throw new PropertiesManagerException("[stripExtension] File name cannot be null or blank");
         }
@@ -848,9 +848,6 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      * @throws PropertiesManagerException si el nombre del archivo es inválido
      */
     private void validateFileName(String fileName) throws PropertiesManagerException {
-
-        log.debug("[validateFileName] -");
-
         if (fileName == null || fileName.isBlank()) {
             throw new PropertiesManagerException("[validateFileName] - File name cannot be null or blank");
         }
@@ -866,10 +863,12 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      * @throws PropertiesManagerException si la clave es inválida
      */
     private void validateKey(String key) throws PropertiesManagerException {
-
-        log.debug("[validateKey] -");
         if (key == null || key.isBlank()) {
-            throw new PropertiesManagerException("[validateKey] - Key cannot be null or blank");
+            String msg = String.format("[validateKey] - %s es null o blanck", key);
+            log.error(msg);
+            throw new PropertiesManagerException(msg);
+        } else {
+            log.debug("[validateKey] - El valor de la Key '{}' es correcto.", key);
         }
     }
 }
