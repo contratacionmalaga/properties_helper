@@ -247,20 +247,17 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
     @Override
     public void printProperties(String fileNameWithoutExtension) throws PropertiesManagerException {
 
+        // Validación de fileNameWithoutExtension
         validateFileName(fileNameWithoutExtension);
+
+        // Validación de propertiesMap
+        validateMap();
 
         try {
             Properties props = propertiesMap.get(fileNameWithoutExtension);
-            if (props == null) {
-                throw new PropertiesManagerException(
-                        String.format("Archivo no encontrado: %s%s", fileNameWithoutExtension, Constantes.PROPERTIES_EXT));
-            }
-
             log.debug("=== Propiedades de {} ===", fileNameWithoutExtension + Constantes.PROPERTIES_EXT);
             printPropertiesInternal(props);
 
-        } catch (PropertiesManagerException e) {
-            throw e;
         } catch (Exception e) {
             String errorMsg = "Error imprimiendo propiedades del archivo: " + fileNameWithoutExtension + ". Error: {}";
             log.error(errorMsg, e.getMessage());
@@ -297,19 +294,22 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      */
     @Override
     public void printAllProperties() throws PropertiesManagerException {
+
         try {
             if (propertiesMap.isEmpty()) {
-                log.debug("No hay archivos .properties cargados para mostrar");
+                log.debug("[printAllProperties] - No hay archivos .properties cargados para mostrar");
                 return;
             }
 
-            log.debug("=== Imprimiendo todas las propiedades ({} archivos) ===", propertiesMap.size());
+            log.debug("[printAllProperties] - === Imprimiendo todas las propiedades del Map ===");
             propertiesMap.forEach((fileName, props) -> {
                 try {
-                    log.debug("--- Archivo: {} ---", fileName + Constantes.PROPERTIES_EXT);
+                    log.debug("[printAllProperties] - --- Archivo: {} ---", fileName + Constantes.PROPERTIES_EXT);
                     printPropertiesInternal(props);
-                } catch (Exception e) {
-                    log.error("Error imprimiendo propiedades del archivo: {}. Error: {}", fileName, e.getMessage());
+                } catch (Exception ex) {
+                    String msg = String.format("[printAllProperties] - Error imprimiendo propiedades del archivo: %s. Error: %s", fileName, ex.getMessage());
+                    log.error(msg, ex);
+                    throw new PropertiesManagerException(fileName, ex);
                 }
             });
 
@@ -330,15 +330,8 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      */
     @Override
     public Properties getProperties(String fileNameWithoutExtension) throws PropertiesManagerException {
-
         validateFileName(fileNameWithoutExtension);
-        log.debug("[getProperties] - Filename válido: {}", fileNameWithoutExtension);
-
-        if (propertiesMap == null) {
-            String errorMsg = "[getProperties] - El mapa de propiedades no ha sido inicializado (es null).";
-            log.error(errorMsg);
-            throw new PropertiesManagerException(errorMsg);
-        }
+        validateMap();
 
         try {
 
@@ -387,14 +380,7 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
     public String getProperty(String fileName, String key) throws PropertiesManagerException {
         validateFileName(fileName);
         validateKey(key);
-
-        log.debug("[getProperty] - Buscando propiedad: archivo='{}', clave='{}'", fileName, key);
-
-        if (propertiesMap == null) {
-            String errorMsg = "[getProperty] - El mapa de propiedades no ha sido inicializado (es null).";
-            log.error(errorMsg);
-            throw new PropertiesManagerException(errorMsg);
-        }
+        validateMap();
 
         try {
 
@@ -443,10 +429,12 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      */
     @Override
     public Map<String, Properties> getAllProperties() throws PropertiesManagerException {
+        validateMap();
+
         try {
             log.debug("[getAllProperties] - Devolviendo todas las propiedades ({} archivos cargados)", propertiesMap.size());
             return propertiesMap;
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             String errorMsg = "Error obteniendo todas las propiedades";
             log.error(errorMsg, e);
             throw new PropertiesManagerException(errorMsg, e);
@@ -605,13 +593,21 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
     public synchronized void reload() throws PropertiesManagerException {
         try {
             log.debug("Iniciando recarga de todas las propiedades");
-            Map<String, Properties> previousMap = propertiesMap;
+
+            if (propertiesMap == null) {
+                log.warn("[reload] - propertiesMap es null antes de recargar, se inicializará en loadAllProperties");
+            }
+
+            Map<String, Properties> previousMap = propertiesMap != null ? new HashMap<>(propertiesMap) : Map.of();
+
             loadAllProperties();
+
             log.debug("Recarga completada: {} archivos previamente cargados → {} archivos actuales",
-                    previousMap.size(), propertiesMap.size());
+                    previousMap.size(), propertiesMap != null ? propertiesMap.size() : 0);
+
         } catch (Exception e) {
-            String errorMsg = "Error durante la recarga de propiedades. Error: {}";
-            log.error(errorMsg, e.getMessage());
+            String errorMsg = String.format("Error durante la recarga de propiedades. Error: %s", e.getMessage());
+            log.error(errorMsg, e);
             throw new PropertiesManagerException(errorMsg, e);
         }
     }
@@ -713,33 +709,31 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      * Si el archivo ya existía, sus propiedades anteriores son completamente reemplazadas.</p>
      *
      * @param fileName   {@inheritDoc}
-     * @param properties {@inheritDoc}
+     * @param props {@inheritDoc}
      * @throws PropertiesManagerException {@inheritDoc}
      * @since 2.0
      */
     @Override
-    public synchronized void addProperties(String fileName, Properties properties)
+    public synchronized void addProperties(String fileName, Properties props)
             throws PropertiesManagerException {
+
         validateFileName(fileName);
-        if (properties == null) {
-            String msg = "[addProperties] - El objeto properties es nulo.";
-            log.debug(msg);
-            throw new PropertiesManagerException(msg);
-        }
+
+        validateProperties(props);
 
         try {
             // Crear nuevo mapa inmutable con las propiedades actualizadas
             Map<String, Properties> newMap = new HashMap<>(this.propertiesMap);
-            Properties previousProps = newMap.put(fileName, properties);
+            Properties previousProps = newMap.put(fileName, props);
 
             this.propertiesMap = Collections.unmodifiableMap(newMap);
 
             if (previousProps != null) {
                 log.debug("Propiedades reemplazadas para archivo '{}': {} propiedades anteriores → {} nuevas",
-                        fileName, previousProps.size(), properties.size());
+                        fileName, previousProps.size(), props.size());
             } else {
                 log.debug("Propiedades añadidas para nuevo archivo '{}': {} propiedades",
-                        fileName, properties.size());
+                        fileName, props.size());
             }
 
         } catch (UnsupportedOperationException e) {
@@ -760,14 +754,9 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      * @return Properties cargadas del archivo
      * @throws IllegalArgumentException Si el archivo es nulo, no existe, no es un archivo válido o no es legible
      */
-    private Properties loadPropertiesFromFile(File file) {
-        if (file == null || !file.exists() || !file.isFile() || !file.canRead()) {
-            throw new IllegalArgumentException("[loadPropertiesFromFile] - Archivo inválido o no legible: " +
-                    (file != null ? file.getAbsolutePath() : "null"));
-        }
+    private Properties loadPropertiesFromFile(File file) throws PropertiesManagerException {
 
-        log.debug("[loadPropertiesFromFile] - Cargando propiedades desde archivo: {} (tamaño: {} bytes)",
-                file.getName(), file.length());
+        validateFile(file);
 
         Properties props = new Properties();
         log.debug("[loadPropertiesFromFile] - Creación de un objeto Properties correctamente.");
@@ -776,7 +765,7 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
              BufferedInputStream bufferedStream = new BufferedInputStream(inputStream)) {
 
             props.load(bufferedStream);
-            log.debug("[loadPropertiesFromFile] - Archivo cargado exitosamente: {} ({} propiedades)", file.getName(), props.size());
+            log.debug("[loadPropertiesFromFile] - Properties cargadas exitosamente: {}", props);
             return props;
 
         } catch (IOException e) {
@@ -798,10 +787,7 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      * @param props el objeto Properties a imprimir, puede ser {@code null} o vacío
      */
     private void printPropertiesInternal(Properties props) {
-        if (props == null || props.isEmpty()) {
-            log.debug("[printPropertiesInternal] - No properties to display");
-            return;
-        }
+        validateProperties(props);
 
         props.forEach((key, value) -> {
             String displayValue = isSensitiveKey(key.toString())
@@ -845,13 +831,11 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      * @throws IllegalArgumentException si {@code fileName} es {@code null} o está vacío
      */
     private String stripExtension(String fileName) {
-        if (fileName == null || fileName.isBlank()) {
-            throw new PropertiesManagerException("[stripExtension] File name cannot be null or blank");
-        }
+        validateFileName(fileName);
 
         int lastDot = fileName.lastIndexOf('.');
         if (lastDot == -1) {
-            log.debug("[stripExtension] - File '{}' has no extension", fileName);
+            log.debug("[stripExtension] - No tiene extensión. Filaname: {}", fileName);
             return fileName;
         }
 
@@ -871,11 +855,14 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      * @throws PropertiesManagerException si el nombre del archivo es inválido
      */
     private void validateFileName(String fileName) throws PropertiesManagerException {
+        String msg;
         if (fileName == null || fileName.isBlank()) {
-            String msg = "[validateFileName] - El nombre del archivo no puede ser null o vacío";
+            msg = "[validateFileName] - El nombre del archivo no puede ser null o blank.";
             log.error(msg);
             throw new PropertiesManagerException(msg);
         }
+        msg = String.format ("[validateFileName] - Fichero válido: %s", fileName);
+        log.debug(msg);
     }
 
     /**
@@ -889,12 +876,47 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      * @throws PropertiesManagerException si la clave es inválida
      */
     private void validateKey(String key) throws PropertiesManagerException {
+        String msg;
         if (key == null || key.isBlank()) {
-            String msg = String.format("[validateKey] - %s es null o blanck", key);
+            msg = String.format("[validateKey] - %s es null o blanck", key);
             log.error(msg);
             throw new PropertiesManagerException(msg);
-        } else {
-            log.debug("[validateKey] - El valor de la Key '{}' es correcto.", key);
         }
+        msg = String.format("[validateKey] - Valor de la key correcto. Key: %s", key);
+        log.debug(msg);
+    }
+
+    private void validateMap() throws PropertiesManagerException {
+
+        String msg;
+        if (propertiesMap == null) {
+            msg = "[validateMap] - El mapa de propiedades no ha sido inicializado (es null).";
+            log.error(msg);
+            throw new PropertiesManagerException(msg);
+        }
+        msg = "[validateMap] - El mapa de propiedades no es null.";
+        log.debug(msg);
+    }
+
+    private void validateFile(File file) throws PropertiesManagerException {
+        String msg;
+        if (file == null || !file.exists() || !file.isFile() || !file.canRead()) {
+            msg = String.format ("[validateFile] - Archivo inválido o no legible: %s", (file != null ? file.getAbsolutePath() : "null"));
+            log.error(msg);
+            throw new PropertiesManagerException(msg);
+        }
+        msg = String.format("[validateFile] - El fichero no es null, existe, es un fichero y se puede leer. File: %s", file.getName());
+        log.debug(msg);
+    }
+
+    private void validateProperties(Properties props) throws PropertiesManagerException {
+        String msg;
+        if (props == null) {
+            msg = "[validateProperties] - Archivo de Properties nulo";
+            log.error(msg);
+            throw new PropertiesManagerException(msg);
+        }
+        msg = String.format("[validateProperties] - El fichero de properties no es null. Properties: %s", props);
+        log.debug(msg);
     }
 }
