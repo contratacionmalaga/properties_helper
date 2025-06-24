@@ -332,13 +332,21 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
     public Properties getProperties(String fileNameWithoutExtension) throws PropertiesManagerException {
 
         validateFileName(fileNameWithoutExtension);
-        log.debug("[getProperties] - Filename váldio: {}", fileNameWithoutExtension);
+        log.debug("[getProperties] - Filename válido: {}", fileNameWithoutExtension);
+
+        if (propertiesMap == null) {
+            String errorMsg = "[getProperties] - El mapa de propiedades no ha sido inicializado (es null).";
+            log.error(errorMsg);
+            throw new PropertiesManagerException(errorMsg);
+        }
 
         try {
 
             Properties props = propertiesMap.get(fileNameWithoutExtension);
 
             if (props == null) {
+                // La clave, fileNameWithoutExtension, no existe dentro del map
+
                 log.debug("[getProperties] - Archivo no encontrado. Devuelvo new Properties.");
                 return new Properties();
             }
@@ -346,9 +354,13 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
             log.debug("[getProperties] - Properties: {}", props);
             return props;
 
-        } catch (Exception ex) {
+        } catch (RuntimeException ex) {
 
-            String errorMsg = String.format("Error obteniendo propiedades del archivo: %s. Error: %s", fileNameWithoutExtension, ex.getMessage());
+            String errorMsg =
+                    String.format(
+                            "Error obteniendo propiedades del archivo: %s. Error: %s",
+                            fileNameWithoutExtension,
+                            ex.getMessage());
             log.error(errorMsg, ex);
             throw new PropertiesManagerException(errorMsg, ex);
 
@@ -376,8 +388,15 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
         validateFileName(fileName);
         validateKey(key);
 
+        log.debug("[getProperty] - Buscando propiedad: archivo='{}', clave='{}'", fileName, key);
+
+        if (propertiesMap == null) {
+            String errorMsg = "[getProperty] - El mapa de propiedades no ha sido inicializado (es null).";
+            log.error(errorMsg);
+            throw new PropertiesManagerException(errorMsg);
+        }
+
         try {
-            log.debug("Buscando propiedad: archivo='{}', clave='{}'", fileName, key);
 
             // 1. Buscar en las propiedades del archivo
             Properties props = propertiesMap.get(fileName);
@@ -404,10 +423,11 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
                 return sysValue;
             }
 
+            // No encontrada
             log.debug("Clave '{}' no encontrada en ninguna fuente para archivo '{}'", key, fileName);
             return null;
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             String errorMsg = String.format("Error obteniendo propiedad: archivo='%s', clave='%s'", fileName, key);
             log.error(errorMsg, e);
             throw new PropertiesManagerException(errorMsg, e);
