@@ -330,24 +330,28 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      */
     @Override
     public Properties getProperties(String fileNameWithoutExtension) throws PropertiesManagerException {
+
         validateFileName(fileNameWithoutExtension);
+        log.debug("[getProperties] - Filename váldio: {}", fileNameWithoutExtension);
 
         try {
+
             Properties props = propertiesMap.get(fileNameWithoutExtension);
 
             if (props == null) {
-                log.debug("Archivo no encontrado: {}, devolviendo Properties vacío", fileNameWithoutExtension);
+                log.debug("[getProperties] - Archivo no encontrado. Devuelvo new Properties.");
                 return new Properties();
             }
 
-            log.debug("Devolviendo propiedades inmutables para archivo: {} ({} propiedades)",
-                    fileNameWithoutExtension, props.size());
+            log.debug("[getProperties] - Properties: {}", props);
             return props;
 
-        } catch (UnsupportedOperationException e) {
-            String errorMsg = "Error obteniendo propiedades del archivo: " + fileNameWithoutExtension + ". Error: {}";
-            log.error(errorMsg, e.getMessage());
-            throw new PropertiesManagerException(errorMsg, e);
+        } catch (Exception ex) {
+
+            String errorMsg = String.format("Error obteniendo propiedades del archivo: %s. Error: %s", fileNameWithoutExtension, ex.getMessage());
+            log.error(errorMsg, ex);
+            throw new PropertiesManagerException(errorMsg, ex);
+
         }
     }
 
@@ -419,7 +423,6 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      */
     @Override
     public Map<String, Properties> getAllProperties() throws PropertiesManagerException {
-        log.debug("[getAllProperties] - ");
         try {
             log.debug("[getAllProperties] - Devolviendo todas las propiedades ({} archivos cargados)", propertiesMap.size());
             return propertiesMap;
@@ -849,9 +852,12 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
      */
     private void validateFileName(String fileName) throws PropertiesManagerException {
         if (fileName == null || fileName.isBlank()) {
-            throw new PropertiesManagerException("[validateFileName] - File name cannot be null or blank");
+            String msg = "[validateFileName] - El nombre del archivo no puede ser null o vacío";
+            log.error(msg);
+            throw new PropertiesManagerException(msg);
         }
     }
+
     /**
      * Valida que la clave de propiedad proporcionada sea válida para su uso
      * en las operaciones de búsqueda y manipulación de propiedades.
