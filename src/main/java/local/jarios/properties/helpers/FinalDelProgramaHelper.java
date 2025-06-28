@@ -1,5 +1,6 @@
-package local.jarios.properties.common.util;
+package local.jarios.properties.helpers;
 
+import local.jarios.properties.common.util.Mensajes;
 import local.jarios.properties.enums.TipoFinalEjecucion;
 import lombok.extern.slf4j.Slf4j;
 
@@ -15,12 +16,12 @@ import lombok.extern.slf4j.Slf4j;
  * <p><b>Author:</b> Juan Antonio</p>
  */
 @Slf4j
-public final class FinalDelPrograma {
+public final class FinalDelProgramaHelper {
 
     /**
      * Constructor privado para evitar instanciación.
      */
-    private FinalDelPrograma() {
+    private FinalDelProgramaHelper() {
         /* CONSTRUCTOR VACÍO */
     }
 

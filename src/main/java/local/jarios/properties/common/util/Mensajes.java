@@ -12,7 +12,7 @@ package local.jarios.properties.common.util;
  * <p><b>Date:</b> 04/06/2024</p>
  * <p><b>Team:</b> Juan Antonio</p>
  */
-public class Mensajes {
+public final class Mensajes {
 
     /**
      * Mensaje que indica el inicio de la ejecución del programa.

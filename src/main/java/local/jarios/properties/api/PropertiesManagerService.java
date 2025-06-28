@@ -45,7 +45,7 @@ public interface PropertiesManagerService {
      *
      * @return Conjunto de claves sensibles.
      */
-    List<String> getListFiles();
+    List<String> getListFiles() throws PropertiesManagerException;
 
     /**
      * Carga todos los ficheros .properties desde el directorio de configuración.
@@ -83,12 +83,12 @@ public interface PropertiesManagerService {
     /**
      * Devuelve el valor de una clave buscando en el fichero, variables de entorno o propiedades del sistema.
      *
-     * @param fileName Nombre del fichero sin extensión.
+     * @param fileNameWithoutExtension Nombre del fichero sin extensión.
      * @param key Clave a buscar.
      * @return Valor encontrado o {@code null} si no existe.
      * @throws PropertiesManagerException si el nombre del fichero o la clave son inválidos.
      */
-    String getProperty(String fileName, String key) throws PropertiesManagerException;
+    String getProperty(String fileNameWithoutExtension, String key) throws PropertiesManagerException;
 
     /**
      * Devuelve un mapa inmutable con todos los ficheros de propiedades cargados.
@@ -101,12 +101,12 @@ public interface PropertiesManagerService {
     /**
      * Exporta las propiedades de un fichero específico en formato JSON.
      *
-     * @param fileName Nombre del fichero sin extensión.
+     * @param fileNameWithoutExtension Nombre del fichero sin extensión.
      * @param maskSensitiveValues Si {@code true}, se ocultan valores sensibles.
      * @return Cadena JSON con las propiedades.
      * @throws PropertiesManagerException si ocurre un error al procesar o exportar las propiedades.
      */
-    String exportPropertiesToJson(String fileName, boolean maskSensitiveValues)
+    String exportPropertiesToJson(String fileNameWithoutExtension, boolean maskSensitiveValues)
             throws PropertiesManagerException;
 
     /**
@@ -121,12 +121,12 @@ public interface PropertiesManagerService {
     /**
      * Verifica si un fichero contiene todas las claves requeridas.
      *
-     * @param fileName Nombre del fichero sin extensión.
+     * @param fileNameWithoutExtension Nombre del fichero sin extensión.
      * @param requiredKeys Conjunto de claves que deben existir.
      * @return {@code true} si todas las claves están presentes; {@code false} en caso contrario.
      * @throws PropertiesManagerException si el fichero es inválido o no se puede acceder.
      */
-    boolean validateRequiredKeys(String fileName, Set<String> requiredKeys) throws PropertiesManagerException;
+    boolean validateRequiredKeys(String fileNameWithoutExtension, Set<String> requiredKeys) throws PropertiesManagerException;
 
     /**
      * Recarga todas las propiedades desde el directorio configurado.

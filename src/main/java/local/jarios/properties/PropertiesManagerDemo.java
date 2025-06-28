@@ -3,10 +3,12 @@ package local.jarios.properties;
 import local.jarios.properties.api.PropertiesManagerService;
 import local.jarios.properties.api.PropertiesManagerServiceImpl;
 import local.jarios.properties.common.util.Constantes;
-import local.jarios.properties.common.util.FinalDelPrograma;
+import local.jarios.properties.helpers.FinalDelProgramaHelper;
+import local.jarios.properties.common.util.Mensajes;
 import local.jarios.properties.enums.TipoFinalEjecucion;
 import local.jarios.properties.exception.PropertiesManagerException;
-import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 
@@ -16,20 +18,24 @@ import java.util.*;
  * <p>
  * Esta clase contiene el método main que inicializa el servicio,
  * carga propiedades y realiza algunas operaciones de ejemplo,
- * registrando información a través del log.
+ * registrando información a través del LOGGER.
  * </p>
  *
  * @author Juan Antonio
  * @version 1.0
  * @since 2024-06-17
  */
-@Slf4j
 public class PropertiesManagerDemo {
+
+    /**
+     * LOGGER del componente
+     */
+    private static final Logger LOGGER = LogManager.getLogger("local.jarios.properties");
 
     /**
      * Instancia singleton del servicio de gestión de propiedades.
      */
-    static PropertiesManagerService propertiesManager = PropertiesManagerServiceImpl.getInstance();
+    static PropertiesManagerService propertiesManager = null;
 
     /**
      * Constructor vacío
@@ -42,7 +48,7 @@ public class PropertiesManagerDemo {
      * Ejecuta todas las pruebas de demostración.
      */
     private static void runAllTests() {
-        log.info("=== INICIANDO DEMO DEL PROPERTIES MANAGER ===");
+        LOGGER.info("=== INICIANDO DEMO DEL PROPERTIES MANAGER ===");
 
         try {
             // 1. Configuración inicial
@@ -66,11 +72,17 @@ public class PropertiesManagerDemo {
             // 7. Recarga de propiedades
             testReload();
 
-            log.info("=== DEMO COMPLETADO EXITOSAMENTE ===");
+            // 8. Añadir propiedades y listar ficheros
+            testAddPropertiesAndListFiles();
+
+            // 9. Casos de error
+            testErrorCases(); // <-- Aquí la llamada que faltaba
+
+            LOGGER.info("=== DEMO COMPLETADO EXITOSAMENTE ===");
 
         } catch (Exception e) {
-            log.error(e.getMessage());
-            FinalDelPrograma.finalizar(TipoFinalEjecucion.ERROR);
+            LOGGER.error(e.getMessage());
+            FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
         }
     }
 
@@ -78,38 +90,77 @@ public class PropertiesManagerDemo {
      * Prueba métodos de configuración del directorio y clave secreta.
      */
     private static void testConfigurationMethods() {
-        log.info("--- Probando métodos de configuración ---");
+        LOGGER.info("--- Probando métodos de configuración ---");
 
         try {
             // Configurar directorio
             propertiesManager.setConfigDir(Constantes.DEFAULT_CONFIG_DIR);
-            log.info("Directorio configurado: {}", Constantes.DEFAULT_CONFIG_DIR);
+            LOGGER.info("Establecido el directorio de los ficheros properties: {}", Constantes.DEFAULT_CONFIG_DIR);
 
             // Obtener directorio actual
             String currentDir = propertiesManager.getConfigDir();
-            log.info("Directorio actual: {}", currentDir);
+            LOGGER.info("Recuperando el directorio de los ficheros properties: {}", currentDir);
 
             // Configurar clave secreta
             propertiesManager.setSecretKey(Constantes.DEFAULT_SECRET_KEY);
-            log.info("Clave secreta configurada");
+            LOGGER.info("Estableciendo la configuración de la clave secreta por defecto: {}", Constantes.DEFAULT_SECRET_KEY);
 
             // Obtener clave secreta (se debería mostrar enmascarada)
             String currentKey = propertiesManager.getSecretKey();
-            log.info("Clave secreta actual: {}", maskString(currentKey));
+            LOGGER.info("Recuperando la configuración de la clave secreta actual: {}", maskString(currentKey));
 
             // Almacenaje de las claves sensibles
             Set<String> sensitiveKeys = new HashSet<>();
             sensitiveKeys.add("password");
-            log.info("Conjunto de claves sensibles: {}",  sensitiveKeys);
+            LOGGER.info("Estableciendo el conjunto de claves sensibles: {}",  sensitiveKeys);
             propertiesManager.setSensitiveKeys(sensitiveKeys);
 
             // Obtención de las claves sensibles una vez almacenadaas
-            log.info("Obtención de las claves sensibles: {}", propertiesManager.getSensitiveKeys());
+            LOGGER.info("Recuperando el conjunto de claves sensibles: {}", propertiesManager.getSensitiveKeys());
 
 
         } catch (PropertiesManagerException e) {
-            log.error(e.getMessage());
-            FinalDelPrograma.finalizar(TipoFinalEjecucion.ERROR);
+            LOGGER.error(e.getMessage());
+            FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
+        }
+    }
+
+    /**
+     * Prueba la funcionalidad de añadir propiedades en memoria y listar ficheros cargados.
+     */
+    private static void testAddPropertiesAndListFiles() {
+        LOGGER.info("--- Probando adición de propiedades y listado de ficheros ---");
+
+        try {
+            // Crear un nuevo conjunto de propiedades
+            Properties customProps = new Properties();
+            customProps.setProperty("custom.key1", "value1");
+            customProps.setProperty("custom.key2", "value2");
+
+            String customFileName = "custom_config";
+
+            // Añadir propiedades al PropertiesManager
+            propertiesManager.addProperties(customFileName, customProps);
+            LOGGER.info("Añadidas propiedades al fichero '{}'", customFileName);
+
+            // Verificar que las propiedades están disponibles
+            Properties retrievedProps = propertiesManager.getProperties(customFileName);
+            LOGGER.info("Propiedades recuperadas de '{}': {}", customFileName, retrievedProps);
+
+            // Obtener listado de ficheros cargados
+            List<String> loadedFiles = propertiesManager.getListFiles();
+            LOGGER.info("Ficheros cargados actualmente: {}", loadedFiles);
+
+            // Validar que el nuevo fichero aparece en el listado
+            if (loadedFiles.contains(customFileName)) {
+                LOGGER.info("El fichero '{}' está presente en el listado de ficheros", customFileName);
+            } else {
+                LOGGER.warn("El fichero '{}' NO está presente en el listado de ficheros", customFileName);
+            }
+
+        } catch (PropertiesManagerException e) {
+            LOGGER.error("Error al probar addProperties o getListFiles: {}", e.getMessage());
+            FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
         }
     }
 
@@ -117,22 +168,22 @@ public class PropertiesManagerDemo {
      * Carga propiedades de prueba en memoria.
      */
     private static void loadTestProperties() {
-        log.info("--- Cargando propiedades desde los ficheros ubicados en: {} ---", Constantes.DEFAULT_CONFIG_DIR);
+        LOGGER.info("Cargando propiedades desde los ficheros ubicados en: --- {} ---", Constantes.DEFAULT_CONFIG_DIR);
 
         try {
 
+            LOGGER.info("Leer todas las propiedades de los ficheros existentes en el directorio de configuración.");
             propertiesManager.loadAllProperties();
-            log.info("Leídas todas las propiedades de todos los ficheros.");
 
-            log.info("Impresión de todas las propiedades definidas en el fichero: {}", Constantes.APP_PROPERTIES);
+            LOGGER.info("Impresión de todas las propiedades definidas en el fichero: {}", Constantes.APP_PROPERTIES);
             propertiesManager.printProperties(Constantes.APP_PROPERTIES);
 
-            log.info("Impresión de todas las propiedades definidas en el fichero: {}", Constantes.EMAIL_PROPERTIES);
+            LOGGER.info("Impresión de todas las propiedades definidas en el fichero: {}", Constantes.EMAIL_PROPERTIES);
             propertiesManager.printProperties(Constantes.EMAIL_PROPERTIES);
 
         } catch (PropertiesManagerException e) {
-            log.error(e.getMessage());
-            FinalDelPrograma.finalizar(TipoFinalEjecucion.ERROR);
+            LOGGER.error(e.getMessage());
+            FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
         }
     }
 
@@ -140,30 +191,30 @@ public class PropertiesManagerDemo {
      * Prueba la obtención de propiedades individuales y conjuntos completos.
      */
     private static void testPropertyRetrieval() {
-        log.info("--- Probando obtención de propiedades ---");
+        LOGGER.info("--- Probando obtención de propiedades ---");
 
         try {
             // Obtener propiedades individuales
             String appName = propertiesManager.getProperty(Constantes.APP_PROPERTIES, Constantes.KEY_APP_NAME);
-            log.info("app.name = {}", appName);
+            LOGGER.info("app.name = {}", appName);
 
             String nonExistent = propertiesManager.getProperty(Constantes.APP_PROPERTIES, Constantes.KEY_NON_EXISTS);
-            log.info("Clave inexistente = {}", nonExistent);
+            LOGGER.info("Clave inexistente = {}", nonExistent);
 
             // Obtener propiedades de un archivo completo
             Properties appProperties = propertiesManager.getProperties(Constantes.APP_PROPERTIES);
-            log.info("Propiedades de '{}' obtenidas: {} elementos", Constantes.APP_PROPERTIES, appProperties.size());
+            LOGGER.info("Propiedades de '{}' obtenidas: {} elementos", Constantes.APP_PROPERTIES, appProperties.size());
 
             // Obtener todas las propiedades
             Map<String, Properties> allProps = propertiesManager.getAllProperties();
-            log.info("Total de archivos cargados: {}", allProps.size());
+            LOGGER.info("Total de archivos cargados: {}", allProps.size());
             allProps.keySet().forEach(fileName ->
-                    log.info("  - {}: {} propiedades", fileName, allProps.get(fileName).size())
+                    LOGGER.info("  - {}: {} propiedades", fileName, allProps.get(fileName).size())
             );
 
         } catch (PropertiesManagerException e) {
-            log.error(e.getMessage());
-            FinalDelPrograma.finalizar(TipoFinalEjecucion.ERROR);
+            LOGGER.error(e.getMessage());
+            FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
         }
     }
 
@@ -171,23 +222,23 @@ public class PropertiesManagerDemo {
      * Prueba la impresión de propiedades en logs.
      */
     private static void testPropertyPrinting() {
-        log.info("--- Probando impresión de propiedades ---");
+        LOGGER.info("--- Probando impresión de propiedades ---");
 
         try {
             // Imprimir propiedades de un archivo específico
-            log.info("Imprimiendo propiedades de '{}':", Constantes.EMAIL_PROPERTIES);
+            LOGGER.info("Imprimiendo propiedades de '{}':", Constantes.EMAIL_PROPERTIES);
             propertiesManager.printProperties(Constantes.EMAIL_PROPERTIES);
 
-            log.info("Imprimiendo propiedades de '{}' (con valores sensibles enmascarados)", Constantes.APP_PROPERTIES);
+            LOGGER.info("Imprimiendo propiedades de '{}' (con valores sensibles enmascarados)", Constantes.APP_PROPERTIES);
             propertiesManager.printProperties(Constantes.APP_PROPERTIES);
 
             // Imprimir todas las propiedades
-            log.info("Imprimiendo TODAS las propiedades:");
+            LOGGER.info("Imprimiendo TODAS las propiedades:");
             propertiesManager.printAllProperties();
 
         } catch (PropertiesManagerException e) {
-            log.error(e.getMessage());
-            FinalDelPrograma.finalizar(TipoFinalEjecucion.ERROR);
+            LOGGER.error(e.getMessage());
+            FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
         }
     }
 
@@ -195,27 +246,27 @@ public class PropertiesManagerDemo {
      * Prueba la exportación a formato JSON.
      */
     private static void testJsonExport() {
-        log.info("--- Probando exportación a JSON ---");
+        LOGGER.info("--- Probando exportación a JSON ---");
 
         try {
             // Exportar un archivo específico sin enmascaramiento
             String appJson = propertiesManager.exportPropertiesToJson(Constantes.APP_PROPERTIES, false);
-            log.info("JSON de '{}' (sin enmascarar)", Constantes.APP_PROPERTIES);
-            log.info(appJson);
+            LOGGER.info("JSON de '{}' (sin enmascarar)", Constantes.APP_PROPERTIES);
+            LOGGER.info(appJson);
 
             // Exportar un archivo específico con enmascaramiento
             String dbJson = propertiesManager.exportPropertiesToJson(Constantes.EMAIL_PROPERTIES, true);
-            log.info("JSON de '{}' (con enmascaramiento)", Constantes.EMAIL_PROPERTIES);
-            log.info(dbJson);
+            LOGGER.info("JSON de '{}' (con enmascaramiento)", Constantes.EMAIL_PROPERTIES);
+            LOGGER.info(dbJson);
 
             // Exportar todas las propiedades con enmascaramiento
             String allJson = propertiesManager.exportAllPropertiesToJson(true);
-            log.info("JSON de TODAS las propiedades (con enmascaramiento)");
-            log.info(allJson);
+            LOGGER.info("JSON de TODAS las propiedades (con enmascaramiento)");
+            LOGGER.info(allJson);
 
         } catch (PropertiesManagerException e) {
-            log.error(e.getMessage());
-            FinalDelPrograma.finalizar(TipoFinalEjecucion.ERROR);
+            LOGGER.error(e.getMessage());
+            FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
         }
     }
 
@@ -223,31 +274,31 @@ public class PropertiesManagerDemo {
      * Prueba la validación de claves requeridas.
      */
     private static void testKeyValidation() {
-        log.info("--- Probando validación de claves requeridas ---");
+        LOGGER.info("--- Probando validación de claves requeridas ---");
 
         try {
             // Validar claves requeridas que existen
             Set<String> requiredAppKeys = Set.of(Constantes.KEY_APP_NAME);
             boolean validApp = propertiesManager.validateRequiredKeys(Constantes.APP_PROPERTIES, requiredAppKeys);
-            log.info("Validación de '{}' con claves requeridas: {}", Constantes.APP_PROPERTIES, validApp);
+            LOGGER.info("Validación de '{}' con claves requeridas: {}", Constantes.APP_PROPERTIES, validApp);
 
             // Validar claves requeridas que no existen
             Set<String> requiredMissingKeys = Set.of(Constantes.KEY_NON_EXISTS);
             boolean validMissing = propertiesManager.validateRequiredKeys(Constantes.APP_PROPERTIES, requiredMissingKeys);
-            log.info("Validación de '{}' con claves faltantes: {}", Constantes.APP_PROPERTIES, validMissing);
+            LOGGER.info("Validación de '{}' con claves faltantes: {}", Constantes.APP_PROPERTIES, validMissing);
 
             // Validar archivo inexistente
             try {
                 boolean validNonExistent = propertiesManager.validateRequiredKeys(Constantes.APP_NON_EXISTS_PROPERTIES, requiredAppKeys);
-                log.info("Validación de archivo inexistente: {}", validNonExistent);
+                LOGGER.info("Validación de archivo inexistente: {}", validNonExistent);
             } catch (PropertiesManagerException e) {
-                log.error(e.getMessage());
-                FinalDelPrograma.finalizar(TipoFinalEjecucion.ERROR);
+                LOGGER.error(e.getMessage());
+                FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
             }
 
         } catch (PropertiesManagerException e) {
-            log.error(e.getMessage());
-            FinalDelPrograma.finalizar(TipoFinalEjecucion.ERROR);
+            LOGGER.error(e.getMessage());
+            FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
         }
     }
 
@@ -255,53 +306,56 @@ public class PropertiesManagerDemo {
      * Prueba la funcionalidad de recarga.
      */
     private static void testReload() {
-        log.info("--- Probando recarga de propiedades ---");
+        LOGGER.info("--- Probando recarga de propiedades ---");
 
         try {
-            log.info("Ejecutando recarga...");
+            LOGGER.info("Ejecutando recarga...");
             propertiesManager.reload();
-            log.info("Recarga completada exitosamente");
+            LOGGER.info("Recarga completada exitosamente");
 
             // Verificar que las propiedades siguen disponibles después de la recarga
             Map<String, Properties> reloadedProps = propertiesManager.getAllProperties();
-            log.info("Archivos disponibles después de la recarga: {}", reloadedProps.size());
+            LOGGER.info("Archivos disponibles después de la recarga: {}", reloadedProps.size());
 
         } catch (PropertiesManagerException e) {
-            log.error(e.getMessage());
-            FinalDelPrograma.finalizar(TipoFinalEjecucion.ERROR);
+            LOGGER.error(e.getMessage());
+            FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
         }
     }
 
     /**
      * Prueba casos de error y manejo de excepciones.
      */
-    private void testErrorCases() {
-        log.info("--- Probando casos de error ---");
+    private static void testErrorCases() {
+        LOGGER.info("--- Probando casos de error ---");
 
         // Intentar acceder a archivo inexistente
         try {
-            propertiesManager.getProperty("archivo_inexistente", "clave");
-            log.error("Se esperaba una excepción para archivo inexistente");
+            String prop = propertiesManager.getProperty("archivo_inexistente", "clave");
+            String msg = "Probando archivo inexistente. ";
+            msg = (prop == null) ? msg + "Valor devuelto: null." : msg + "Valor devuelto: " + prop;
+            LOGGER.info(msg);
         } catch (PropertiesManagerException e) {
-            log.error(e.getMessage());
-            FinalDelPrograma.finalizar(TipoFinalEjecucion.ERROR);
+            LOGGER.error(e.getMessage());
+            FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
         }
 
         // Intentar usar nombre de archivo inválido
         try {
+            LOGGER.info("Probando a imprimir las properties de un fichero que no exsite.");
             propertiesManager.printProperties("");
-            log.error("Se esperaba una excepción para nombre vacío");
-        } catch (PropertiesManagerException e) {
-            log.error(e.getMessage());
-            FinalDelPrograma.finalizar(TipoFinalEjecucion.ERROR);
+            LOGGER.info("Se esperaba una excepción para nombre vacío");
+        } catch (PropertiesManagerException ex) {
+            LOGGER.error(ex.getMessage());
+            FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
         }
 
         // Intentar configurar directorio inválido
         try {
             propertiesManager.setConfigDir("/ruta/inexistente/completamente");
         } catch (PropertiesManagerException e) {
-            log.error(e.getMessage());
-            FinalDelPrograma.finalizar(TipoFinalEjecucion.ERROR);
+            LOGGER.error(e.getMessage());
+            FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
         }
     }
 
@@ -323,22 +377,24 @@ public class PropertiesManagerDemo {
      * @param args Argumentos de línea de comandos (no se usan)
      */
     public static void main(String[] args) {
-        log.info("Iniciando demo del PropertiesManager");
 
-        // NOTA: Aquí necesitarías proporcionar una instancia real de PropertiesManager
-        // PropertiesManager manager = new PropertiesManagerImpl(); // Tu implementación
+        // Inicio del log
+        LOGGER.info(Mensajes.INICIO);
 
-        // Para la demo, asumimos que tienes una implementación disponible
+        propertiesManager = PropertiesManagerServiceImpl.getInstance();
+        LOGGER.info("Obtenida la instancia de PropertiesManagerServiceImpl correctamente.");
+
         try {
-            // Descomenta la siguiente línea cuando tengas la implementación
-            // PropertiesManagerDemo demo = new PropertiesManagerDemo(manager);
-            // demo.runAllTests();
 
             runAllTests();
 
-        } catch (PropertiesManagerException e) {
-            log.error(e.getMessage());
-            FinalDelPrograma.finalizar(TipoFinalEjecucion.ERROR);
+            FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.CORRECTO);
+
+        } catch (PropertiesManagerException ex) {
+
+            LOGGER.error("Error en las operaciones sobre ficheros properties. Mensaje: {}", ex.getMessage(), ex);
+            FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
+
         }
     }
 }

@@ -22,28 +22,5 @@ public enum TipoFinalEjecucion {
     CORRECTO,
 
     /** Indica que la ejecución ha finalizado con errores. */
-    ERROR;
-
-    /**
-     * Registra en los logs el estado final de la ejecución.
-     * <p>
-     * Este método permite registrar el estado final de la ejecución del programa
-     * para su posterior análisis y seguimiento.
-     * </p>
-     *
-     * @param tipoFinal El estado final de la ejecución.
-     */
-    public void registrarEstadoFinal(TipoFinalEjecucion tipoFinal) {
-        switch (tipoFinal) {
-            case CORRECTO:
-                log.info("La ejecución del programa ha finalizado correctamente.");
-                break;
-            case ERROR:
-                log.error("La ejecución del programa ha finalizado con errores.");
-                break;
-            default:
-                log.warn("Estado final desconocido: {}", tipoFinal);
-                break;
-        }
-    }
+    ERROR
 }
