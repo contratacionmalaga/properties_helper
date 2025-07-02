@@ -153,23 +153,6 @@ public interface PropertiesManagerService {
     String getConfigDir() throws PropertiesManagerException;
 
     /**
-     * Establece una clave secreta para desencriptar valores sensibles.
-     * Si es {@code null} o vacío, se establece una clave por defecto (modo desarrollo).
-     *
-     * @param key Clave secreta.
-     * @throws PropertiesManagerException si la clave es inválida.
-     */
-    void setSecretKey(String key) throws PropertiesManagerException;
-
-    /**
-     * Obtiene la clave secreta actualmente definida.
-     *
-     * @return Clave secreta.
-     * @throws PropertiesManagerException si no se puede acceder a la clave.
-     */
-    String getSecretKey() throws PropertiesManagerException;
-
-    /**
      * Añade o reemplaza un conjunto de propiedades en memoria para un fichero específico.
      *
      * @param fileName Nombre del fichero sin extensión.

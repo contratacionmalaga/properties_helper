@@ -16,9 +16,6 @@ public final class Constantes {
     /** Directorio donde se encuentran los ficheros de config */
     public static final String DEFAULT_CONFIG_DIR = "config";
 
-    /** Clave por defecto */
-    public static final String DEFAULT_SECRET_KEY = "Malaga$$2025";
-
     /** Nombre sin extensión del fichero app.properties */
     public static final String APP_PROPERTIES = "app";
 

@@ -80,8 +80,8 @@ public class PropertiesManagerDemo {
 
             LOGGER.info("=== DEMO COMPLETADO EXITOSAMENTE ===");
 
-        } catch (Exception e) {
-            LOGGER.error(e.getMessage());
+        } catch (Exception ex) {
+
             FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
         }
     }
@@ -101,14 +101,6 @@ public class PropertiesManagerDemo {
             String currentDir = propertiesManager.getConfigDir();
             LOGGER.info("Recuperando el directorio de los ficheros properties: {}", currentDir);
 
-            // Configurar clave secreta
-            propertiesManager.setSecretKey(Constantes.DEFAULT_SECRET_KEY);
-            LOGGER.info("Estableciendo la configuración de la clave secreta por defecto: {}", Constantes.DEFAULT_SECRET_KEY);
-
-            // Obtener clave secreta (se debería mostrar enmascarada)
-            String currentKey = propertiesManager.getSecretKey();
-            LOGGER.info("Recuperando la configuración de la clave secreta actual: {}", maskString(currentKey));
-
             // Almacenaje de las claves sensibles
             Set<String> sensitiveKeys = new HashSet<>();
             sensitiveKeys.add("password");
@@ -119,8 +111,8 @@ public class PropertiesManagerDemo {
             LOGGER.info("Recuperando el conjunto de claves sensibles: {}", propertiesManager.getSensitiveKeys());
 
 
-        } catch (PropertiesManagerException e) {
-            LOGGER.error(e.getMessage());
+        } catch (PropertiesManagerException ex) {
+
             FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
         }
     }
@@ -158,8 +150,8 @@ public class PropertiesManagerDemo {
                 LOGGER.warn("El fichero '{}' NO está presente en el listado de ficheros", customFileName);
             }
 
-        } catch (PropertiesManagerException e) {
-            LOGGER.error("Error al probar addProperties o getListFiles: {}", e.getMessage());
+        } catch (PropertiesManagerException ex) {
+
             FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
         }
     }
@@ -182,7 +174,7 @@ public class PropertiesManagerDemo {
             propertiesManager.printProperties(Constantes.EMAIL_PROPERTIES);
 
         } catch (PropertiesManagerException e) {
-            LOGGER.error(e.getMessage());
+
             FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
         }
     }
@@ -213,7 +205,7 @@ public class PropertiesManagerDemo {
             );
 
         } catch (PropertiesManagerException e) {
-            LOGGER.error(e.getMessage());
+
             FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
         }
     }
@@ -237,7 +229,7 @@ public class PropertiesManagerDemo {
             propertiesManager.printAllProperties();
 
         } catch (PropertiesManagerException e) {
-            LOGGER.error(e.getMessage());
+
             FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
         }
     }
@@ -265,7 +257,7 @@ public class PropertiesManagerDemo {
             LOGGER.info(allJson);
 
         } catch (PropertiesManagerException e) {
-            LOGGER.error(e.getMessage());
+
             FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
         }
     }
@@ -297,7 +289,7 @@ public class PropertiesManagerDemo {
             }
 
         } catch (PropertiesManagerException e) {
-            LOGGER.error(e.getMessage());
+
             FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
         }
     }
@@ -318,7 +310,7 @@ public class PropertiesManagerDemo {
             LOGGER.info("Archivos disponibles después de la recarga: {}", reloadedProps.size());
 
         } catch (PropertiesManagerException e) {
-            LOGGER.error(e.getMessage());
+
             FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
         }
     }
@@ -336,7 +328,7 @@ public class PropertiesManagerDemo {
             msg = (prop == null) ? msg + "Valor devuelto: null." : msg + "Valor devuelto: " + prop;
             LOGGER.info(msg);
         } catch (PropertiesManagerException e) {
-            LOGGER.error(e.getMessage());
+
             FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
         }
 
@@ -346,7 +338,7 @@ public class PropertiesManagerDemo {
             propertiesManager.printProperties("");
             LOGGER.info("Se esperaba una excepción para nombre vacío");
         } catch (PropertiesManagerException ex) {
-            LOGGER.error(ex.getMessage());
+
             FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
         }
 
@@ -354,21 +346,9 @@ public class PropertiesManagerDemo {
         try {
             propertiesManager.setConfigDir("/ruta/inexistente/completamente");
         } catch (PropertiesManagerException e) {
-            LOGGER.error(e.getMessage());
+
             FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
         }
-    }
-
-    /**
-     * Enmascara una cadena para mostrar información sensible de forma segura.
-     * @param input valor de entrada
-     * @return String enmascarado
-     */
-    private static String maskString(String input) {
-        if (input == null || input.length() <= 4) {
-            return "****";
-        }
-        return input.substring(0, 2) + "****" + input.substring(input.length() - 2);
     }
 
     /**
@@ -392,7 +372,6 @@ public class PropertiesManagerDemo {
 
         } catch (PropertiesManagerException ex) {
 
-            LOGGER.error("Error en las operaciones sobre ficheros properties. Mensaje: {}", ex.getMessage(), ex);
             FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
 
         }
