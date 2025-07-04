@@ -47,7 +47,6 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
 
     @Override
     public void setConfigDir(String configDir) throws PropertiesManagerException {
-        LOGGER.debug("[setConfigDir] - Inicio.");
         this.configDir = (configDir == null || configDir.isBlank())
                 ? Constantes.DEFAULT_CONFIG_DIR
                 : configDir.trim();
@@ -56,13 +55,13 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
 
     @Override
     public String getConfigDir() {
-        LOGGER.debug("[getConfigDir] - Inicio.");
-        return (configDir == null || configDir.isBlank()) ? Constantes.DEFAULT_CONFIG_DIR : configDir;
+        String aux = (configDir == null || configDir.isBlank()) ? Constantes.DEFAULT_CONFIG_DIR : configDir;
+        LOGGER.debug("[getConfigDir] - Configuración actual: {}", aux);
+        return aux;
     }
 
     @Override
     public synchronized void setSensitiveKeys(Set<String> keys) {
-        LOGGER.debug("[setSensitiveKeys] - Inicio.");
         this.sensitiveKeys = (keys == null) ? Collections.emptySet() : Set.copyOf(keys);
         LOGGER.debug("[setSensitiveKeys] - Claves sensibles actualizadas: {}", this.sensitiveKeys);
     }
@@ -95,13 +94,13 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
         }
 
         //
-        LOGGER.debug("[loadAllProperties] - Array de Ficheros aosciados al directorio: {}.", Arrays.toString(files));
+        LOGGER.debug("[loadAllProperties] - File[]: {}.", Arrays.toString(files));
 
         for (File f : files) {
             Properties p = loadPropertiesFromFile(f);
+            LOGGER.debug("[loadAllProperties] - Propiedades ({}) del fichero ({})", p, f);
             String key = stripExtension(f.getName());
             temp.put(key, p);
-            LOGGER.debug("[loadAllProperties] - Archivo cargado: {} ({} propiedades)", f.getName(), p.size());
         }
 
         this.propertiesMap = Collections.unmodifiableMap(temp);
@@ -110,7 +109,6 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
 
     @Override
     public synchronized void reload() throws PropertiesManagerException {
-        LOGGER.debug("[reload] - Inicio.");
         loadAllProperties();
     }
 

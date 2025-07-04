@@ -25,7 +25,7 @@ import java.util.*;
  * @version 1.0
  * @since 2024-06-17
  */
-public class PropertiesManagerDemo {
+public class PropertiesDemo {
 
     /**
      * LOGGER del componente
@@ -40,7 +40,7 @@ public class PropertiesManagerDemo {
     /**
      * Constructor vacío
      */
-    private PropertiesManagerDemo() {
+    private PropertiesDemo() {
         // Constructor vacío
     }
 

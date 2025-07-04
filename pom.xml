@@ -3,8 +3,15 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>local.jarios</groupId>
     <artifactId>properties_helper</artifactId>
-    <version>3.0.1-SNAPSHOT</version>
+    <version>3.1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
+
+    <repositories>
+        <repository>
+            <id>central</id>
+            <url>https://repo.maven.apache.org/maven2</url>
+        </repository>
+    </repositories>
 
     <name>properties_helper</name>
     <description>Gestión avanzada de ficheros properties</description>
@@ -35,7 +42,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
-        <exec.mainClass>local.jarios.properties.PropertiesManagerDemo</exec.mainClass>
+        <exec.mainClass>local.jarios.properties.PropertiesDemo</exec.mainClass>
         <jackson.version>2.19.1</jackson.version>
     </properties>
 
@@ -260,6 +267,13 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>3.4.2</version>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <Main-Class>local.jarios.properties.PropertiesDemo</Main-Class>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
                 <!-- No config aquí; se toma el finalName del <build> -->
             </plugin>
 
@@ -269,6 +283,11 @@
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>3.7.1</version>
                 <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <Main-Class>local.jarios.properties.PropertiesDemo</Main-Class>
+                        </manifestEntries>
+                    </archive>
                     <appendAssemblyId>true</appendAssemblyId>
                     <finalName>${project.artifactId}-${version.trimmed}</finalName>
                     <descriptorRefs>
@@ -297,7 +316,7 @@
             </activation>
             <properties>
                 <!-- Aquí defines manualmente la versión limpia -->
-                <version.trimmed>3.0.0</version.trimmed>
+                <version.trimmed>3.1.0</version.trimmed>
             </properties>
         </profile>
     </profiles>
