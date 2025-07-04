@@ -32,5 +32,5 @@ jobs:
       - name: Run OWASP Dependency Check
         uses: dependency-check/owasp-dependency-check-action@v2
         with:
-          project: 'version_helper'
+          project: 'properties_helper'
           scanPath: '.'
