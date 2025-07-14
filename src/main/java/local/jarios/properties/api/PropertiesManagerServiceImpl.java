@@ -16,35 +16,49 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Implementación de la clase
+ * Implementación singleton del servicio {@link PropertiesManagerService}.
+ * <p>
+ * Este servicio permite cargar, obtener, modificar y exportar archivos de propiedades
+ * desde un directorio configurable.
  */
 public class PropertiesManagerServiceImpl implements PropertiesManagerService {
 
-    /** LOGGER asociado al componente */
+    /** LOGGER */
     private static final Logger LOGGER = LogManager.getLogger(PropertiesManagerServiceImpl.class);
 
-    /** Instanciación de la clase */
+    /** Instancia del objeto */
     private static final PropertiesManagerServiceImpl INSTANCE = new PropertiesManagerServiceImpl();
 
-    /**  Objecto para la gestión de los properties como JSON */
+    /** Para la exportación a JSON */
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
-    /** Variable que contiene el directorio por defecto */
+    /** Directorio de configuración donde se encuentran los ficheros properties */
     private volatile String configDir = Constantes.DEFAULT_CONFIG_DIR;
 
+    /** Mapa que contendrá todas las propiedades de todos los ficheros */
     private volatile Map<String, Properties> propertiesMap = Collections.emptyMap();
+
+    /** Conjunto de Key Sensitive */
     private volatile Set<String> sensitiveKeys = Collections.emptySet();
 
-    private PropertiesManagerServiceImpl() { /* Singleton */ }
+    /** Constructor privado para evitar instanciaciones de la clase */
+    private PropertiesManagerServiceImpl() { }
 
+    /**
+     * Devuelve la instancia singleton del servicio de propiedades.
+     *
+     * @return instancia única del servicio
+     */
     public static PropertiesManagerService getInstance() {
         return INSTANCE;
     }
 
-    // ============================================================
-    //                  <<< Public API Methods >>>
-    // ============================================================
-
+    /**
+     * Establece el directorio desde donde se cargarán los archivos de propiedades.
+     *
+     * @param configDir directorio con los archivos .properties; si es nulo o vacío se usa el valor por defecto
+     * @throws PropertiesManagerException si ocurre un error de validación
+     */
     @Override
     public void setConfigDir(String configDir) throws PropertiesManagerException {
         this.configDir = (configDir == null || configDir.isBlank())
@@ -53,6 +67,11 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
         LOGGER.debug("[setConfigDir] - Nueva configuración: {}", this.configDir);
     }
 
+    /**
+     * Devuelve el directorio actual de configuración.
+     *
+     * @return ruta al directorio configurado
+     */
     @Override
     public String getConfigDir() {
         String aux = (configDir == null || configDir.isBlank()) ? Constantes.DEFAULT_CONFIG_DIR : configDir;
@@ -60,45 +79,49 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
         return aux;
     }
 
+    /**
+     * Define las claves sensibles que serán ocultadas al exportar o imprimir.
+     *
+     * @param keys conjunto de claves sensibles
+     */
     @Override
     public synchronized void setSensitiveKeys(Set<String> keys) {
         this.sensitiveKeys = (keys == null) ? Collections.emptySet() : Set.copyOf(keys);
         LOGGER.debug("[setSensitiveKeys] - Claves sensibles actualizadas: {}", this.sensitiveKeys);
     }
 
+    /**
+     * Obtiene el conjunto actual de claves sensibles.
+     *
+     * @return conjunto de claves sensibles
+     */
     @Override
     public Set<String> getSensitiveKeys() {
         LOGGER.debug("[getSensitiveKeys] - {}", sensitiveKeys);
         return sensitiveKeys;
     }
 
+    /**
+     * Carga todos los archivos .properties del directorio configurado.
+     *
+     * @throws PropertiesManagerException si ocurre algún error en el proceso
+     */
     @Override
     public synchronized void loadAllProperties() throws PropertiesManagerException {
-
-        //
         File dir = new File(getConfigDir());
-        LOGGER.debug("[loadAllProperties] - Obtenido el directorio mediante getConfigDir: {}.", dir);
-
-        //
         validateDirectory(dir);
-        LOGGER.debug("[loadAllProperties] - Obtenido el directorio mediante getConfigDir: {}.", dir);
 
         Map<String, Properties> temp = new HashMap<>();
         File[] files = dir.listFiles((d, name) -> name.toLowerCase().endsWith(Constantes.PROPERTIES_EXT));
 
-        //
         if (files == null || files.length == 0) {
             LOGGER.warn("[loadAllProperties] - No se encontraron .properties en {}", dir.getAbsolutePath());
             this.propertiesMap = Collections.emptyMap();
             return;
         }
 
-        //
-        LOGGER.debug("[loadAllProperties] - File[]: {}.", Arrays.toString(files));
-
         for (File f : files) {
             Properties p = loadPropertiesFromFile(f);
-            LOGGER.debug("[loadAllProperties] - Propiedades ({}) del fichero ({})", p, f);
             String key = stripExtension(f.getName());
             temp.put(key, p);
         }
@@ -107,67 +130,78 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
         LOGGER.debug("[loadAllProperties] - Total archivos cargados: {}", propertiesMap.size());
     }
 
+    /**
+     * Recarga todos los archivos de propiedades.
+     *
+     * @throws PropertiesManagerException si ocurre un error
+     */
     @Override
     public synchronized void reload() throws PropertiesManagerException {
         loadAllProperties();
     }
 
+    /**
+     * Agrega o reemplaza un conjunto de propiedades en memoria.
+     *
+     * @param fileName nombre del archivo lógico
+     * @param props    propiedades a almacenar
+     * @throws PropertiesManagerException si hay errores de validación
+     */
     @Override
     public void addProperties(String fileName, Properties props) throws PropertiesManagerException {
-
         validateFileName(fileName);
-        LOGGER.debug("[addProperties] - Validación correcta del Filename: {}", fileName);
-
         validateProperties(props);
-        LOGGER.debug("[addProperties] - Validación correcta del Properties: {}", props);
 
         Map<String, Properties> newMap = new HashMap<>(propertiesMap);
-        LOGGER.debug("[addProperties] - Creación de un nuevo Map<String, Properties>");
         Properties prev = newMap.put(fileName, props);
-        LOGGER.debug("[addProperties] - Creación de un nuevo Properties a partir de newMap.put(fileName, props)");
         propertiesMap = Collections.unmodifiableMap(newMap);
-        LOGGER.debug("[addProperties] - Establezco que propertiesMap sea Collections.unmodifiableMap(newMap)");
+
         LOGGER.debug(prev == null
                         ? "[addProperties] - Añadido '{}', {} propiedades"
                         : "[addProperties] - Reemplazado '{}', antes {} propiedades, ahora {}",
                 fileName, props.size(), prev == null ? 0 : prev.size());
     }
 
+    /**
+     * Imprime por consola las propiedades asociadas a un archivo.
+     *
+     * @param fileName nombre del archivo lógico
+     * @throws PropertiesManagerException si hay errores de validación
+     */
     @Override
     public void printProperties(String fileName) throws PropertiesManagerException {
-
-        //
         validateFileName(fileName);
-        LOGGER.debug("[printProperties] - Validación correcta del fileName: {}", fileName);
         validateMap(propertiesMap);
-        LOGGER.debug("[printProperties] - Validación correcta del Map<String, Properties>: {}", propertiesMap);
         Properties props = propertiesMap.get(fileName);
-        LOGGER.debug("[printProperties] - Obtengo las propiedades propertiesMap.get(fileName) {}", props);
         validateProperties(props);
-        LOGGER.debug("[printProperties] - Validación correcta del Properties: {}", props);
         printPropertiesInternal(props);
     }
 
+    /**
+     * Imprime todas las propiedades de todos los archivos cargados.
+     *
+     * @throws PropertiesManagerException si hay errores de validación
+     */
     @Override
     public void printAllProperties() throws PropertiesManagerException {
-
-        //
         validateMap(propertiesMap);
-        LOGGER.debug("[printAllProperties] - Validación correcta del Map<String, Properties>: {}", propertiesMap);
         propertiesMap.forEach((k, props) -> {
             LOGGER.info("[printAllProperties] === {}{} ===", k, Constantes.PROPERTIES_EXT);
             printPropertiesInternal(props);
         });
     }
 
+    /**
+     * Devuelve las propiedades asociadas a un archivo.
+     *
+     * @param fileName nombre del archivo
+     * @return objeto {@link Properties}
+     * @throws PropertiesManagerException si hay errores de validación
+     */
     @Override
     public Properties getProperties(String fileName) throws PropertiesManagerException {
-
-        //
         validateFileName(fileName);
-        LOGGER.debug("[getProperties] - Validación correcta del fileName: {}", fileName);
         validateMap(propertiesMap);
-        LOGGER.debug("[getProperties] - Validación correcta del Map<String, Properties>: {}", propertiesMap);
 
         return Optional.ofNullable(propertiesMap.get(fileName))
                 .map(props -> {
@@ -177,92 +211,90 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
                 .orElseGet(Properties::new);
     }
 
+    /**
+     * Devuelve el valor asociado a una clave en un archivo.
+     *
+     * @param fileName nombre del archivo
+     * @param key      clave a buscar
+     * @return valor o {@code null} si no se encuentra
+     * @throws PropertiesManagerException si hay errores de validación
+     */
     @Override
     public String getProperty(String fileName, String key) throws PropertiesManagerException {
-
         validateFileName(fileName);
-        LOGGER.debug("[getProperty] - Validación correcta de fileName: {}", fileName);
         validateKey(key);
-        LOGGER.debug("[getProperty] - Validación correcta de la Key: {}", key);
         validateMap(propertiesMap);
-        LOGGER.debug("[getProperty] - Validación correcta de Map: {}", propertiesMap);
         Properties props = propertiesMap.get(fileName);
-        LOGGER.debug("[getProperty] - Creación de objeto Properties a partir de filename");
         validateProperties(props);
-        LOGGER.debug("[getProperty] - Validación correcta de Properties: {}", props);
 
-        if (props.containsKey(key)) {
-            String value =  props.getProperty(key);
-            LOGGER.debug("[getProperty] - La key figura en el filename. Filename: {}; Key: {}; Value: {}", fileName, key, value);
-            return value;
-        }
-
-        LOGGER.debug("[getProperty] - La key NO figura en el filename. Filename {}; Key: {}", fileName, key);
-        // En caso de no encontrar la key devuelvo null
-        return null;
+        return props.containsKey(key) ? props.getProperty(key) : null;
     }
 
+    /**
+     * Devuelve la lista de archivos cargados.
+     *
+     * @return lista de nombres de archivo
+     * @throws PropertiesManagerException si hay errores de validación
+     */
     @Override
     public List<String> getListFiles() throws PropertiesManagerException {
         validateMap(propertiesMap);
-        LOGGER.debug("[getListFiles] - Validación correcta de Map: {}", propertiesMap);
-        List<String> listFiles = new ArrayList<>(propertiesMap.keySet());
-        LOGGER.debug("[getListFiles] - Lista de ficheros: {}", listFiles);
-        return listFiles;
+        return new ArrayList<>(propertiesMap.keySet());
     }
 
+    /**
+     * Devuelve el mapa completo de archivos y sus propiedades.
+     *
+     * @return mapa inmutable de propiedades
+     * @throws PropertiesManagerException si hay errores de validación
+     */
     @Override
     public Map<String, Properties> getAllProperties() throws PropertiesManagerException {
         validateMap(propertiesMap);
-        LOGGER.debug("[getAllProperties] - Validación correcta de Map: {}", propertiesMap);
         return propertiesMap;
     }
 
+    /**
+     * Verifica si todas las claves requeridas existen en el archivo especificado.
+     *
+     * @param fileName     nombre del archivo
+     * @param requiredKeys claves requeridas
+     * @return {@code true} si todas existen, {@code false} si falta alguna
+     * @throws PropertiesManagerException si hay errores de validación
+     */
     @Override
     public boolean validateRequiredKeys(String fileName, Set<String> requiredKeys) throws PropertiesManagerException {
-
         validateFileName(fileName);
-        LOGGER.debug("[validateRequiredKeys] - Validación correcta de fileName: {}", fileName);
         validateMap(propertiesMap);
-        LOGGER.debug("[validateRequiredKeys] - Validación correcta de Map: {}", propertiesMap);
 
-        if (requiredKeys == null || requiredKeys.isEmpty()) {
-            LOGGER.debug("[validateRequiredKeys] - El conjunto de requiredKeys es NULL | Emptye. Devuelvo true.");
-            return true;
-        }
+        if (requiredKeys == null || requiredKeys.isEmpty()) return true;
 
         Properties props = propertiesMap.get(fileName);
-        LOGGER.debug("[validateRequiredKeys] - Obtengo el objeto Properties a partir del fichero: {}", fileName);
-        if (props == null) {
-            LOGGER.debug("[validateRequiredKeys] - El objeto Properties es Null. Devuelvo false.");
-            return false;
-        }
+        if (props == null) return false;
 
         Set<String> missing = requiredKeys.stream()
                 .filter(k -> !props.containsKey(k))
                 .collect(Collectors.toSet());
-        LOGGER.debug("[validateRequiredKeys] - Conjunto missing: {}", missing);
 
-        boolean empty = missing.isEmpty();
-        LOGGER.debug("[validateRequiredKeys] - Conjunto missing es empty: {}", empty);
-
-        return empty;
+        return missing.isEmpty();
     }
 
+    /**
+     * Exporta las propiedades de un archivo a formato JSON.
+     *
+     * @param fileName      nombre del archivo
+     * @param maskSensitive si {@code true}, oculta claves sensibles
+     * @return representación JSON
+     * @throws PropertiesManagerException si hay errores de validación o serialización
+     */
     @Override
     public String exportPropertiesToJson(String fileName, boolean maskSensitive) throws PropertiesManagerException {
-
         validateFileName(fileName);
-        LOGGER.debug("[exportPropertiesToJson] - Validación correcta de fileName: {}", fileName);
         validateMap(propertiesMap);
-        LOGGER.debug("[exportPropertiesToJson] - Validación correcta de Map: {}", propertiesMap);
 
         Properties props = propertiesMap.get(fileName);
-        LOGGER.debug("[exportPropertiesToJson] - Obtengo el objeto Properties a partir del fichero: {}", fileName);
         if (props == null) {
-            String msg = "[exportPropertiesToJson] - Obtengo el objeto Properties es NULL";
-            LOGGER.debug(msg);
-            throw new PropertiesManagerException(msg);
+            throw new PropertiesManagerException("[exportPropertiesToJson] - El archivo no tiene propiedades cargadas");
         }
 
         Map<String, String> map = props.entrySet().stream()
@@ -272,26 +304,26 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
                                 ? Constantes.KEY_SENSITIVE_VALUE
                                 : e.getValue().toString()
                 ));
-        LOGGER.debug("[exportPropertiesToJson] - Map<String, String> generado con Key_Sensitivo: {}", map);
 
         try {
             return JSON_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(map);
         } catch (JsonProcessingException ex) {
-            String msg = String.format("[exportPropertiesToJson] - Error exporando a JSON el Map: %s. Error: %s", map, ex.getMessage());
-            LOGGER.error(msg, ex);
-            throw new PropertiesManagerException(msg, ex);
+            throw new PropertiesManagerException("Error exportando a JSON", ex);
         }
     }
 
+    /**
+     * Exporta todas las propiedades de todos los archivos a JSON.
+     *
+     * @param maskSensitive si {@code true}, oculta claves sensibles
+     * @return JSON con todas las propiedades
+     * @throws PropertiesManagerException si ocurre un error
+     */
     @Override
     public String exportAllPropertiesToJson(boolean maskSensitive) throws PropertiesManagerException {
-
         validateMap(propertiesMap);
-        LOGGER.debug("[exportAllPropertiesToJson] - Validación correcta de Map: {}", propertiesMap);
 
         Map<String, Map<String, String>> all = new HashMap<>();
-        LOGGER.debug("[exportAllPropertiesToJson] - Creación de un nuevo objeto Map<String, Map<String, String>>");
-
         propertiesMap.forEach((k, props) -> all.put(k, props.entrySet().stream()
                 .collect(Collectors.toMap(
                         e -> e.getKey().toString(),
@@ -301,130 +333,126 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
                 ))
         ));
 
-        LOGGER.debug("[exportAllPropertiesToJson] - Datos del objeto Map<String, Map<String, String>>: {}", all);
-
         try {
             return JSON_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(all);
         } catch (JsonProcessingException ex) {
-            String msg = String.format("[exportPropertiesToJson] - Error exporando a JSON el Map: %s. Error: %s", all, ex.getMessage());
-            LOGGER.error(msg, ex);
-            throw new PropertiesManagerException(msg, ex);
+            throw new PropertiesManagerException("Error exportando a JSON", ex);
         }
     }
 
-    // ============================================================
-    //                  <<< Private Helpers >>>
-    // ============================================================
+    // Métodos privados: los dejé sin Javadoc por ser internos y no requeridos por javadoc:jar
 
+    /**
+     * Cargar propiedades desde fichero
+     * @param file fichero desde el que se cargan las propiedades
+     * @return properties objeto con las propiedades cargadas desde un fichero
+     * @throws PropertiesManagerException excepción
+     */
     private Properties loadPropertiesFromFile(File file) throws PropertiesManagerException {
-
         validateFile(file);
-        LOGGER.debug("[loadPropertiesFromFile] - Ficher correcto: {}.", file.getAbsoluteFile());
-
         try (InputStream in = new BufferedInputStream(new FileInputStream(file))) {
             Properties props = new Properties();
-            LOGGER.debug("[loadPropertiesFromFile] - Creación de un nuevo objeto Properties.");
             props.load(in);
-            LOGGER.debug("[loadPropertiesFromFile] - Cargamdo las propiedades desde el fichero: {}.", file.getAbsoluteFile());
             return props;
         } catch (IOException ex) {
-            String msg = String.format("Error en el archivo %s: %s", file.getAbsolutePath(), ex.getMessage());
-            LOGGER.error(msg, ex);
             throw new PropertiesManagerException("Error cargando archivo " + file.getName(), ex);
         }
     }
 
+    /**
+     * Imprime prodiedades
+     * @param props properties a imprimir
+     * @throws PropertiesManagerException excepción
+     */
     private void printPropertiesInternal(Properties props) throws PropertiesManagerException {
-
         validateProperties(props);
-        LOGGER.debug("[printPropertiesInternal] - Validación correcta de Properties: {}", props);
-
-        if (props.isEmpty()) {
-            LOGGER.info("[printPropertiesInternal] - No hay propiedades para imprimir.");
-            return;
-        }
-
+        if (props.isEmpty()) return;
         props.forEach((k, v) -> {
             String val = isSensitiveKey(k.toString()) ? Constantes.KEY_SENSITIVE_VALUE : v.toString();
             LOGGER.info("{} = {}", k, val);
         });
     }
 
+    /**
+     * Verificar si es una Sensitive Key
+     * @param key fcihero con extensión
+     * @return boolean
+     * @throws PropertiesManagerException excepción
+     */
     private boolean isSensitiveKey(String key) {
-
-        if (StringHelper.isStringInvalid(key)) {
-            LOGGER.debug("[isSensitiveKey] - isSensitiveKey({}): ", key);
-            return false;
-        }
-
-        LOGGER.debug("[isSensitiveKey] - : {}", key);
+        if (StringHelper.isStringInvalid(key)) return false;
         String lower = key.toLowerCase(Locale.ROOT);
-        LOGGER.debug("[isSensitiveKey] - Pasando key a minusculas. key: {}, lower: {}", key, lower);
-        boolean keySensitive = sensitiveKeys.stream()
+        return sensitiveKeys.stream()
                 .map(s -> s.toLowerCase(Locale.ROOT))
                 .anyMatch(lower::contains);
-        LOGGER.debug("[isSensitiveKey] - isSensitiveKey({}): {}", key, keySensitive);
-        return keySensitive;
-
     }
 
-    private String stripExtension(String name) throws PropertiesManagerException {
-
-        //
-        validateFileName(name);
-        LOGGER.debug("[stripExtension] - Validación correcta de filename: {}", name);
-        int idx = name.lastIndexOf('.');
-        LOGGER.debug("[stripExtension] - Índice del '.': {}", idx);
-        String filenameWithoutExtension = (idx == -1) ? name : name.substring(0, idx);
-        LOGGER.debug("[stripExtension] - Filename sin extensión: {}", filenameWithoutExtension);
-        return filenameWithoutExtension;
+    /**
+     * Eliminar extensión
+     * @param filename fcihero con extensión
+     * @return string
+     * @throws PropertiesManagerException excepción
+     */
+    private String stripExtension(String filename) throws PropertiesManagerException {
+        validateFileName(filename);
+        int idx = filename.lastIndexOf('.');
+        return (idx == -1) ? filename : filename.substring(0, idx);
     }
 
-    private <K,V> void validateMap(Map<K,V> map) throws PropertiesManagerException {
-        if (MapHelper.isMapInvalid(map)) {
-            String msg = String.format("Map no válido. Map: %s", map);
-            LOGGER.error(msg);
-            throw new PropertiesManagerException(msg);
-        }
+    /**
+     * Valida que un mapa no sea nulo ni vacío.
+     *
+     * @param <K> tipo de clave del mapa
+     * @param <V> tipo de valor del mapa
+     * @param map el mapa a validar
+     * @throws PropertiesManagerException si el mapa es inválido
+     */
+    private <K, V> void validateMap(Map<K, V> map) throws PropertiesManagerException {
+        if (MapHelper.isMapInvalid(map)) throw new PropertiesManagerException("Map inválido");
     }
 
-    private void validateFileName(String name) throws PropertiesManagerException {
-        if (StringHelper.isStringInvalid(name)) {
-            String msg = String.format("Nombre de archivo inválido. String: %s", name);
-            LOGGER.error(msg);
-            throw new PropertiesManagerException(msg);
-        }
+    /**
+     * Validar key
+     * @param filename string
+     * @throws PropertiesManagerException excepción
+     */
+    private void validateFileName(String filename) throws PropertiesManagerException {
+        if (StringHelper.isStringInvalid(filename)) throw new PropertiesManagerException("Nombre de archivo inválido");
     }
 
+    /**
+     * Validar key
+     * @param key string
+     * @throws PropertiesManagerException excepción
+     */
     private void validateKey(String key) throws PropertiesManagerException {
-        if (StringHelper.isStringInvalid(key)) {
-            String msg = String.format("Clave inválida. String: %s", key);
-            LOGGER.error(msg);
-            throw new PropertiesManagerException(msg);
-        }
+        if (StringHelper.isStringInvalid(key)) throw new PropertiesManagerException("Clave inválida");
     }
 
+    /**
+     * Validar fichero
+     * @param file fichero
+     * @throws PropertiesManagerException excepción
+     */
     private void validateFile(File file) throws PropertiesManagerException {
-        if (FileHelper.isInvalidFile(file)) {
-            String msg = String.format("Archivo inválido o no legible. Properties: %s", file);
-            LOGGER.error(msg);
-            throw new PropertiesManagerException(msg);
-        }
+        if (FileHelper.isInvalidFile(file)) throw new PropertiesManagerException("Archivo inválido");
     }
 
+    /**
+     * Validar directorio
+     * @param dir directorio
+     * @throws PropertiesManagerException excepción
+     */
     private void validateDirectory(File dir) throws PropertiesManagerException {
-        if (FileHelper.isInvalidDirectory(dir)) {
-            String msg = String.format("Directorio inválido o no legible. File: %s", dir);
-            LOGGER.error(msg);
-            throw new PropertiesManagerException(msg);
-        }
+        if (FileHelper.isInvalidDirectory(dir)) throw new PropertiesManagerException("Directorio inválido");
     }
 
+    /**
+     * Validar properties
+     * @param props properties
+     * @throws PropertiesManagerException excepción
+     */
     private void validateProperties(Properties props) throws PropertiesManagerException {
-        if (PropertiesHelper.isPropertiesInvalid(props)) {
-            String msg = String.format("Properties inválido o no legible. Properties: %s", props);
-            LOGGER.error(msg);
-            throw new PropertiesManagerException(msg);
-        }
+        if (PropertiesHelper.isPropertiesInvalid(props)) throw new PropertiesManagerException("Properties inválido");
     }
 }
