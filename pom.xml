@@ -49,7 +49,7 @@
         <log4j.version>2.24.3</log4j.version>
         <lombok.version>1.18.38</lombok.version>
         <jasypt.version>1.9.3</jasypt.version>
-        <junit.version>6.0.0-M1</junit.version>
+        <junit.version>6.0.0-M2</junit.version>
         <assertj.version>4.0.0-M1</assertj.version>
         <mockito.version>5.18.0</mockito.version>
         <jackson.version>2.19.1</jackson.version>
