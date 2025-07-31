@@ -151,11 +151,15 @@
                 <artifactId>dependency-check-maven</artifactId>
                 <version>12.1.3</version>
                 <configuration>
-                    <nvdApiKey>95ada876-88fe-4a9b-ae9c-43f3c37cc004</nvdApiKey>
-                    <skip>true</skip>
+                    <nvdApiKey>3631de7c-27e6-4ff8-8c35-af94c01567a3</nvdApiKey>
+                    <skip>false</skip>
+                    <failBuildOnCVSS>7</failBuildOnCVSS> <!-- Falla si hay vulnerabilidades críticas -->
+                    <format>HTML</format> <!-- Genera reporte HTML -->
+                    <outputDirectory>${project.build.directory}/dependency-check-report</outputDirectory>
                 </configuration>
                 <executions>
                     <execution>
+                        <phase>package</phase>
                         <goals>
                             <goal>check</goal>
                         </goals>
