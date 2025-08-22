@@ -182,7 +182,7 @@
             <plugin>
                 <groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
-                <version>4.9.3.2</version>
+                <version>4.9.4.0</version>
                 <configuration>
                     <includeFilterFile>src/main/resources/spotbugs-security-include.xml</includeFilterFile>
                     <excludeFilterFile>src/main/resources/spotbugs-security-exclude.xml</excludeFilterFile>
