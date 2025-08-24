@@ -8,9 +8,9 @@ import local.jarios.properties.helpers.FileHelper;
 import local.jarios.properties.helpers.MapHelper;
 import local.jarios.properties.helpers.PropertiesHelper;
 import local.jarios.properties.helpers.StringHelper;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -140,34 +140,24 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
    */
   @Override
   public synchronized void loadAllProperties() throws PropertiesManagerException {
+    File dir = new File(getConfigDir());
+    validateDirectory(dir);
 
-    try {
-      File dir = new File(getConfigDir());
-      validateDirectory(dir);
-
-      File[] files = dir.listFiles(
-          (d, name) -> name.toLowerCase().endsWith(Constantes.PROPERTIES_EXT));
-
-      if (files == null || files.length == 0) {
-        LOGGER.warn(
-            "[loadAllProperties] - No se encontraron .properties en {}",
-            dir.getAbsolutePath());
-        propertiesMap.clear();
-        return;
-      }
-
-      for (File f : files) {
-        Properties p = loadPropertiesFromFile(f);
-        String key = stripExtension(f.getName());
-        propertiesMap.put(key, p);
-      }
-
-      LOGGER.debug(
-          "[loadAllProperties] - Total archivos cargados: {}",
-          propertiesMap.size());
-    } catch (Exception ex) {
-      ex.printStackTrace();
+    File[] files = dir.listFiles((d, name) -> name.toLowerCase().endsWith(".properties"));
+    if (files == null || files.length == 0) {
+      LOGGER.warn("No se encontraron .properties en {}", dir.getAbsolutePath());
+      propertiesMap = Collections.emptyMap(); // Borrar todo
+      return;
     }
+
+    Map<String, Properties> tempMap = new HashMap<>();
+    for (File f : files) {
+      Properties props = loadPropertiesFromFile(f);
+      String key = stripExtension(f.getName());
+      tempMap.put(key, props);
+    }
+
+    propertiesMap = Collections.unmodifiableMap(tempMap); // Nuevo mapa inmutable
   }
 
   /**
@@ -226,10 +216,17 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
   public void setProperty(String fileName, String property, String valor)
       throws PropertiesManagerException {
     validateFileName(fileName);
-    validateFileName(property);
+    validateKey(property);
 
-    Properties props = propertiesMap.computeIfAbsent(fileName, k -> new Properties());
+    Map<String, Properties> newMap = new HashMap<>(propertiesMap); // copia mutable
+    Properties props = newMap.get(fileName);
+    if (props == null) {
+      props = new Properties();
+      newMap.put(fileName, props);
+    }
     props.setProperty(property, valor);
+
+    propertiesMap = Collections.unmodifiableMap(newMap); // volver a inmutable
 
     LOGGER.debug("[setProperty] - '{}' actualizado: {}={}", fileName, property, valor);
   }
@@ -245,7 +242,9 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
     validateFileName(fileName);
     validateMap(propertiesMap);
     Properties props = propertiesMap.get(fileName);
-    validateProperties(props);
+    if (props == null) {
+      throw new PropertiesManagerException("Archivo no cargado: " + fileName);
+    }
     printPropertiesInternal(props);
   }
 
@@ -256,7 +255,9 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
    */
   @Override
   public void printAllProperties() throws PropertiesManagerException {
-    validateMap(propertiesMap);
+    if (propertiesMap == null) {
+      throw new PropertiesManagerException("Mapa no cargado.");
+    }
     propertiesMap.forEach((k, props) -> {
       LOGGER.info("[printAllProperties] === {}{} ===", k, Constantes.PROPERTIES_EXT);
       printPropertiesInternal(props);
@@ -289,9 +290,13 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
   public String getProperty(String fileName, String key) throws PropertiesManagerException {
     validateFileName(fileName);
     validateKey(key);
-    validateMap(propertiesMap);
-    Properties props = propertiesMap.get(fileName);
-    return (props != null) ? props.getProperty(key) : null;
+    Properties props = getProperties(fileName); // ya devuelve Properties vacío si no existe
+    String value = props.getProperty(key);
+    if (value == null) {
+      throw new PropertiesManagerException(
+          "Clave inexistente: " + key + " en " + fileName);
+    }
+    return value;
   }
 
   /**
@@ -314,8 +319,10 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
    */
   @Override
   public Map<String, Properties> getAllProperties() throws PropertiesManagerException {
-    validateMap(propertiesMap);
-    return propertiesMap;
+    if (propertiesMap == null) {
+      return Collections.emptyMap();
+    }
+    return Collections.unmodifiableMap(propertiesMap);
   }
 
   /**
@@ -351,12 +358,14 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
   public String exportPropertiesToJson(String fileName, boolean maskSensitive)
       throws PropertiesManagerException {
     validateFileName(fileName);
-    validateMap(propertiesMap);
-
+    if (propertiesMap == null) {
+      throw new PropertiesManagerException(
+          "[exportPropertiesToJson] - El mapa no se encuentra cargado.");
+    }
     Properties props = propertiesMap.get(fileName);
     if (props == null) {
       throw new PropertiesManagerException(
-          "[exportPropertiesToJson] - El archivo no tiene propiedades cargadas");
+          "[exportPropertiesToJson] - Archivo no cargado: " + fileName + ".");
     }
 
     Map<String, String> filteredMap = maskSensitiveKeys(props, maskSensitive);

@@ -46,6 +46,32 @@ public class PropertiesDemo {
   }
 
   /**
+   * Método principal para ejecutar la demo del PropertiesManager.
+   *
+   * @param args Argumentos de línea de comandos (no se usan)
+   */
+  public static void main(String[] args) {
+
+    // Inicio del log
+    LOGGER.info(Mensajes.INICIO);
+
+    propertiesManager = PropertiesManagerServiceImpl.getInstance();
+    LOGGER.info("Obtenida la instancia de PropertiesManagerServiceImpl correctamente.");
+
+    try {
+
+      runAllTests();
+
+      FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.CORRECTO);
+
+    } catch (PropertiesManagerException ex) {
+
+      FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
+
+    }
+  }
+
+  /**
    * Ejecuta todas las pruebas de demostración.
    */
   private static void runAllTests() {
@@ -54,6 +80,9 @@ public class PropertiesDemo {
     try {
       // 1. Configuración inicial
       testConfigurationMethods();
+
+      // 2. Añadir propiedades y listar ficheros
+      testAddPropertiesAndListFiles();
 
       // 2. Carga de propiedades de prueba
       loadTestProperties();
@@ -73,8 +102,7 @@ public class PropertiesDemo {
       // 7. Recarga de propiedades
       testReload();
 
-      // 8. Añadir propiedades y listar ficheros
-      testAddPropertiesAndListFiles();
+
 
       // 9. Casos de error
       testErrorCases(); // <-- Aquí la llamada que faltaba
@@ -94,7 +122,7 @@ public class PropertiesDemo {
    * Prueba métodos de configuración del directorio y clave secreta.
    */
   private static void testConfigurationMethods() {
-    LOGGER.info("--- Probando métodos de configuración ---");
+    LOGGER.info("--- TEST 01 - Probando métodos de configuración ---");
 
     try {
       // Configurar directorio
@@ -116,7 +144,6 @@ public class PropertiesDemo {
       LOGGER.info("Recuperando el conjunto de claves sensibles: {}",
                   propertiesManager.getSensitiveKeys());
 
-
     } catch (PropertiesManagerException ex) {
 
       FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
@@ -127,7 +154,7 @@ public class PropertiesDemo {
    * Prueba la funcionalidad de añadir propiedades en memoria y listar ficheros cargados.
    */
   private static void testAddPropertiesAndListFiles() {
-    LOGGER.info("--- Probando adición de propiedades y listado de ficheros ---");
+    LOGGER.info("--- TEST 02 - Probando adición de propiedades y listado de ficheros ---");
 
     try {
       // Crear un nuevo conjunto de propiedades
@@ -171,11 +198,12 @@ public class PropertiesDemo {
    */
   private static void loadTestProperties() {
     LOGGER.info(
-        "Cargando propiedades desde los ficheros ubicados en /{}",
+        "--- TEST 03 - Cargando propiedades desde los ficheros ubicados en /{}",
         Constantes.PROPERTIES_DIR);
 
     try {
 
+      propertiesManager.printAllProperties();
       propertiesManager.loadAllProperties();
       propertiesManager.printAllProperties();
 
@@ -190,7 +218,7 @@ public class PropertiesDemo {
    * Prueba la obtención de propiedades individuales y conjuntos completos.
    */
   private static void testPropertyRetrieval() {
-    LOGGER.info("--- Probando obtención de propiedades ---");
+    LOGGER.info("--- TEST 04 - Probando obtención de propiedades ---");
 
     try {
       // Obtener propiedades individuales
@@ -374,31 +402,7 @@ public class PropertiesDemo {
     }
   }
 
-  /**
-   * Método principal para ejecutar la demo del PropertiesManager.
-   *
-   * @param args Argumentos de línea de comandos (no se usan)
-   */
-  public static void main(String[] args) {
 
-    // Inicio del log
-    LOGGER.info(Mensajes.INICIO);
-
-    propertiesManager = PropertiesManagerServiceImpl.getInstance();
-    LOGGER.info("Obtenida la instancia de PropertiesManagerServiceImpl correctamente.");
-
-    try {
-
-      runAllTests();
-
-      FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.CORRECTO);
-
-    } catch (PropertiesManagerException ex) {
-
-      FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
-
-    }
-  }
 
   /**
    * Prueba la funcionalidad de hasLoaded y setProperty.

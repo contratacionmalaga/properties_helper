@@ -24,6 +24,6 @@ public final class PropertiesHelper {
   public static boolean isPropertiesInvalid(Properties properties) {
 
     // Verificación de existencia del archivo
-    return (properties == null) || (properties.isEmpty());
+    return (properties == null);
   }
 }
