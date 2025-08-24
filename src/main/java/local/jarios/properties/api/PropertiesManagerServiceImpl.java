@@ -8,6 +8,7 @@ import local.jarios.properties.helpers.FileHelper;
 import local.jarios.properties.helpers.MapHelper;
 import local.jarios.properties.helpers.PropertiesHelper;
 import local.jarios.properties.helpers.StringHelper;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import java.io.BufferedInputStream;
@@ -139,28 +140,34 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
    */
   @Override
   public synchronized void loadAllProperties() throws PropertiesManagerException {
-    File dir = new File(getConfigDir());
-    validateDirectory(dir);
 
-    File[] files = dir.listFiles(
-        (d, name) -> name.toLowerCase().endsWith(Constantes.PROPERTIES_EXT));
-    if (files == null || files.length == 0) {
-      LOGGER.warn(
-          "[loadAllProperties] - No se encontraron .properties en {}",
-          dir.getAbsolutePath());
-      propertiesMap.clear();
-      return;
+    try {
+      File dir = new File(getConfigDir());
+      validateDirectory(dir);
+
+      File[] files = dir.listFiles(
+          (d, name) -> name.toLowerCase().endsWith(Constantes.PROPERTIES_EXT));
+
+      if (files == null || files.length == 0) {
+        LOGGER.warn(
+            "[loadAllProperties] - No se encontraron .properties en {}",
+            dir.getAbsolutePath());
+        propertiesMap.clear();
+        return;
+      }
+
+      for (File f : files) {
+        Properties p = loadPropertiesFromFile(f);
+        String key = stripExtension(f.getName());
+        propertiesMap.put(key, p);
+      }
+
+      LOGGER.debug(
+          "[loadAllProperties] - Total archivos cargados: {}",
+          propertiesMap.size());
+    } catch (Exception ex) {
+      ex.printStackTrace();
     }
-
-    for (File f : files) {
-      Properties p = loadPropertiesFromFile(f);
-      String key = stripExtension(f.getName());
-      propertiesMap.put(key, p);
-    }
-
-    LOGGER.debug(
-        "[loadAllProperties] - Total archivos cargados: {}",
-        propertiesMap.size());
   }
 
   /**
@@ -386,10 +393,13 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
    * @throws PropertiesManagerException excepción
    */
   private Properties loadPropertiesFromFile(File file) throws PropertiesManagerException {
+    LOGGER.info(file.getName());
     validateFile(file);
+
     try (InputStream in = new BufferedInputStream(new FileInputStream(file))) {
       Properties props = new Properties();
       props.load(in);
+      LOGGER.info(props);
       return props;
     } catch (IOException ex) {
       throw new PropertiesManagerException("Error cargando archivo " + file.getName(), ex);

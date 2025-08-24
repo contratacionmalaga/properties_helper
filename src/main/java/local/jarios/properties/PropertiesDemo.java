@@ -171,25 +171,17 @@ public class PropertiesDemo {
    */
   private static void loadTestProperties() {
     LOGGER.info(
-        "Cargando propiedades desde los ficheros ubicados en: --- {} ---",
+        "Cargando propiedades desde los ficheros ubicados en /{}",
         Constantes.PROPERTIES_DIR);
 
     try {
 
-      LOGGER.info(
-          "Leer todas las propiedades de los ficheros existentes en el directorio.");
       propertiesManager.loadAllProperties();
-
-      LOGGER.info("Impresión de todas las propiedades definidas en el fichero: {}",
-                  Constantes.APP_PROPERTIES);
-      propertiesManager.printProperties(Constantes.APP_PROPERTIES);
-
-      LOGGER.info("Impresión de todas las propiedades definidas en el fichero: {}",
-                  Constantes.EMAIL_PROPERTIES);
-      propertiesManager.printProperties(Constantes.EMAIL_PROPERTIES);
+      propertiesManager.printAllProperties();
 
     } catch (PropertiesManagerException e) {
 
+      e.getStackTrace();
       FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
     }
   }
