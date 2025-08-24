@@ -1,15 +1,14 @@
 package local.jarios.properties.api;
 
 import local.jarios.properties.exception.PropertiesManagerException;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
 /**
- * Interfaz que define las operaciones para la gestión centralizada de ficheros .properties.
- * Esta API permite:
+ * Interfaz que define las operaciones para la gestión centralizada de ficheros .properties. Esta
+ * API permite:
  * <ul>
  *   <li>Carga de múltiples ficheros .properties desde una carpeta externa o el classpath.</li>
  *   <li>Acceso inmutable a las propiedades para evitar modificaciones accidentales.</li>
@@ -26,6 +25,13 @@ import java.util.Set;
 public interface PropertiesManagerService {
 
   /**
+   * Obtiene el conjunto de claves sensibles definidas.
+   *
+   * @return Conjunto de claves sensibles.
+   */
+  Set<String> getSensitiveKeys();
+
+  /**
    * Establece las claves sensibles que deben ocultarse durante la impresión y exportación.
    *
    * @param keys Conjunto de claves sensibles. Si es {@code null} o vacío, no se ocultará ninguna.
@@ -38,18 +44,11 @@ public interface PropertiesManagerService {
    *
    * @return Conjunto de claves sensibles.
    */
-  Set<String> getSensitiveKeys();
-
-  /**
-   * Obtiene el conjunto de claves sensibles definidas.
-   *
-   * @return Conjunto de claves sensibles.
-   */
   List<String> getListFiles() throws PropertiesManagerException;
 
   /**
-   * Carga todos los ficheros .properties desde el directorio de configuración.
-   * Reemplaza cualquier carga previa.
+   * Carga todos los ficheros .properties desde el directorio de configuración. Reemplaza cualquier
+   * carga previa.
    *
    * @throws PropertiesManagerException si falla la carga desde el directorio o el classpath.
    */
@@ -65,8 +64,8 @@ public interface PropertiesManagerService {
   void printProperties(String fileNameWithoutExtension) throws PropertiesManagerException;
 
   /**
-   * Imprime en el log todas las propiedades de todos los ficheros cargados.
-   * Se aplica enmascaramiento a las claves sensibles.
+   * Imprime en el log todas las propiedades de todos los ficheros cargados. Se aplica
+   * enmascaramiento a las claves sensibles.
    *
    * @throws PropertiesManagerException si ocurre un error durante la operación.
    */
@@ -82,7 +81,7 @@ public interface PropertiesManagerService {
   Properties getProperties(String fileNameWithoutExtension) throws PropertiesManagerException;
 
   /**
-   * Agrega o reemplaza una propiedad dentro de un fichero
+   * Agrega o reemplaza una propiedad dentro de un fichero.
    *
    * @param fileName nombre del archivo lógico
    * @param property propiedad donde se almacenará
@@ -93,7 +92,7 @@ public interface PropertiesManagerService {
       throws PropertiesManagerException;
 
   /**
-   * Devievle un booleano indicando si un fichero de propiedades ya ha sido cargado
+   * Devievle un booleano indicando si un fichero de propiedades ya ha sido cargado.
    *
    * @param fileName fichero que analizamos.
    * @return boolean con el valor indicando si se ha cargado o no.
@@ -101,8 +100,8 @@ public interface PropertiesManagerService {
   boolean hasLoaded(String fileName) throws PropertiesManagerException;
 
   /**
-   * Devuelve el valor de una clave buscando en el fichero,
-   * variables de entorno o propiedades del sistema.
+   * Devuelve el valor de una clave buscando en el fichero, variables de entorno o propiedades del
+   * sistema.
    *
    * @param fileNameWithoutExtension Nombre del fichero sin extensión.
    * @param key                      Clave a buscar.
@@ -147,7 +146,8 @@ public interface PropertiesManagerService {
    * @return {@code true} si todas las claves están presentes; {@code false} en caso contrario.
    * @throws PropertiesManagerException si el fichero es inválido o no se puede acceder.
    */
-  boolean validateRequiredKeys(String fileNameWithoutExtension, Set<String> requiredKeys) throws PropertiesManagerException;
+  boolean validateRequiredKeys(String fileNameWithoutExtension, Set<String> requiredKeys)
+      throws PropertiesManagerException;
 
   /**
    * Recarga todas las propiedades desde el directorio configurado.
@@ -155,15 +155,6 @@ public interface PropertiesManagerService {
    * @throws PropertiesManagerException si falla la recarga.
    */
   void reload() throws PropertiesManagerException;
-
-  /**
-   * Establece el directorio desde donde se cargarán los ficheros .properties.
-   * Si es {@code null} o vacío, se usa la ruta por defecto.
-   *
-   * @param configDir Ruta del directorio.
-   * @throws PropertiesManagerException si la ruta es inválida o no accesible.
-   */
-  void setConfigDir(String configDir) throws PropertiesManagerException;
 
   /**
    * Obtiene el directorio actualmente configurado para la carga de ficheros.
@@ -174,11 +165,21 @@ public interface PropertiesManagerService {
   String getConfigDir() throws PropertiesManagerException;
 
   /**
+   * Establece el directorio desde donde se cargarán los ficheros .properties. Si es {@code null} o
+   * vacío, se usa la ruta por defecto.
+   *
+   * @param configDir Ruta del directorio.
+   * @throws PropertiesManagerException si la ruta es inválida o no accesible.
+   */
+  void setConfigDir(String configDir) throws PropertiesManagerException;
+
+  /**
    * Añade o reemplaza un conjunto de propiedades en memoria para un fichero específico.
    *
    * @param fileName   Nombre del fichero sin extensión.
    * @param properties Propiedades a almacenar.
-   * @throws PropertiesManagerException si los parámetros son inválidos o ocurre un error de almacenamiento.
+   * @throws PropertiesManagerException si los parámetros son inválidos o ocurre un error de
+   *                                    almacenamiento.
    */
   void addProperties(String fileName, Properties properties) throws PropertiesManagerException;
 }

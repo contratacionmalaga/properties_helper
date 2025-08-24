@@ -5,47 +5,46 @@ import local.jarios.properties.enums.TipoFinalEjecucion;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Clase utilitaria para finalizar la ejecución del programa
- * registrando el resultado final mediante logs y terminando el proceso
- * con el código adecuado.
- * <p>
- * El método {@code finalizar} acepta un tipo de finalización que determina
- * si la ejecución terminó correctamente o con error y actúa en consecuencia.
- * </p>
+ * Clase utilitaria para finalizar la ejecución del programa registrando el resultado final mediante
+ * logs y terminando el proceso con el código adecuado.
  *
- * <p><b>Author:</b> Juan Antonio</p>
+ * <p>El método {@code finalizar} acepta un tipo de finalización que determina si la ejecución
+ * terminó correctamente o con error y actúa en consecuencia.</p>
+ *
+ * @author Juan Antonio
+ * @version 2.0
+ * @since 2024-06-18
  */
 @Slf4j
 public final class FinalDelProgramaHelper {
 
-    /**
-     * Constructor privado para evitar instanciación.
-     */
-    private FinalDelProgramaHelper() {
-        /* CONSTRUCTOR VACÍO */
+  /**
+   * Constructor privado para evitar instanciación.
+   */
+  private FinalDelProgramaHelper() {
+    /* CONSTRUCTOR VACÍO */
+  }
+
+  /**
+   * Finaliza la ejecución del programa registrando un mensaje de resultado y llamando a
+   * {@code System.exit} con el código 0 para ejecución correcta o 1 para error.
+   *
+   * @param tipoFinal Tipo de finalización de la ejecución.
+   */
+  public static void finalizar(TipoFinalEjecucion tipoFinal) {
+    String mensaje;
+    int exitCode;
+
+    if (tipoFinal == TipoFinalEjecucion.CORRECTO) {
+      mensaje = Mensajes.FINAL_CORRECTO;
+      exitCode = 0;
+    } else {
+      mensaje = Mensajes.FINAL_ERROR;
+      exitCode = 1;
     }
 
-    /**
-     * Finaliza la ejecución del programa registrando un mensaje
-     * de resultado y llamando a {@code System.exit} con el código
-     * 0 para ejecución correcta o 1 para error.
-     *
-     * @param tipoFinal Tipo de finalización de la ejecución.
-     */
-    public static void finalizar(TipoFinalEjecucion tipoFinal) {
-        String mensaje;
-        int exitCode;
-
-        if (tipoFinal == TipoFinalEjecucion.CORRECTO) {
-            mensaje = Mensajes.FINAL_CORRECTO;
-            exitCode = 0;
-        } else {
-            mensaje = Mensajes.FINAL_ERROR;
-            exitCode = 1;
-        }
-
-        log.info(mensaje);
-        log.info(Mensajes.FINAL);
-        System.exit(exitCode);
-    }
+    log.info(mensaje);
+    log.info(Mensajes.FINAL);
+    System.exit(exitCode);
+  }
 }

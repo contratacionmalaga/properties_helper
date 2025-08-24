@@ -1,17 +1,12 @@
 package local.jarios.properties.exception;
 
 /**
- * Excepción personalizada para errores relacionados con la carga
- * y manejo de ficheros de propiedades (.properties).
- * <p>
- * Esta excepción extiende de {@link RuntimeException} y se lanza cuando
- * ocurre cualquier fallo durante la lectura, validación o procesamiento
- * de ficheros properties en la aplicación.
- * </p>
- * <p>
- * Permite encapsular el mensaje de error y la causa raíz para facilitar
- * la depuración y trazabilidad.
- * </p>
+ * Excepción personalizada para errores relacionados con la carga y manejo de ficheros de
+ * propiedades (.properties).
+ *
+ * <p>Esta excepción extiende de {@link RuntimeException} y se lanza cuando ocurre cualquier fallo
+ * durante la lectura, validación o procesamiento de ficheros properties en la aplicación. Permite
+ * encapsular el mensaje de error y la causa raíz para facilitar la depuración y trazabilidad.</p>
  *
  * <p><b>Ejemplo de uso:</b></p>
  * <pre>
@@ -24,23 +19,23 @@ package local.jarios.properties.exception;
  */
 public class PropertiesManagerException extends RuntimeException {
 
-    /**
-     * Construye una nueva excepción con un mensaje de error específico.
-     *
-     * @param message mensaje que describe la causa de la excepción
-     */
-    public PropertiesManagerException(String message) {
-        super(message);
-    }
+  /**
+   * Construye una nueva excepción con un mensaje de error específico.
+   *
+   * @param message mensaje que describe la causa de la excepción
+   */
+  public PropertiesManagerException(String message) {
+    super(message);
+  }
 
-    /**
-     * Construye una nueva excepción con un mensaje de error específico
-     * y una causa subyacente (otra excepción).
-     *
-     * @param message mensaje que describe la causa de la excepción
-     * @param cause excepción original que provocó esta excepción
-     */
-    public PropertiesManagerException(String message, Throwable cause) {
-        super(message, cause);
-    }
+  /**
+   * Construye una nueva excepción con un mensaje de error específico y una causa subyacente (otra
+   * excepción).
+   *
+   * @param message mensaje que describe la causa de la excepción
+   * @param cause   excepción original que provocó esta excepción
+   */
+  public PropertiesManagerException(String message, Throwable cause) {
+    super(message, cause);
+  }
 }
