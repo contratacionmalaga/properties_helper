@@ -72,7 +72,7 @@
         <maven.project.info.reports.plugin.version>3.9.0</maven.project.info.reports.plugin.version>
 
         <!-- Quality and security plugin versions -->
-        <jacoco.plugin.version>0.8.12</jacoco.plugin.version>
+        <jacoco.plugin.version>0.8.13</jacoco.plugin.version>
         <spotbugs.plugin.version>4.9.3.2</spotbugs.plugin.version>
         <findsecbugs.plugin.version>1.12.0</findsecbugs.plugin.version>
         <dependency.check.plugin.version>12.1.3</dependency.check.plugin.version>
