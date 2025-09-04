@@ -20,7 +20,7 @@
         <connection>scm:git:https://github.com/contratacionmalaga/properties_helper.git</connection>
         <developerConnection>scm:git:git@github.com:contratacionmalaga/properties_helper.git</developerConnection>
         <url>https://github.com/contratacionmalaga/properties_helper</url>
-        <tag>HEAD</tag>
+        <tag>v4.2.0</tag>
     </scm>
 
     <distributionManagement>
