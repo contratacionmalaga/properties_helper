@@ -259,7 +259,7 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
       throw new PropertiesManagerException("Mapa no cargado.");
     }
     propertiesMap.forEach((k, props) -> {
-      LOGGER.info("[printAllProperties] === {}{} ===", k, Constantes.PROPERTIES_EXT);
+      LOGGER.debug("[printAllProperties] === {}{} ===", k, Constantes.PROPERTIES_EXT);
       printPropertiesInternal(props);
     });
   }
@@ -402,13 +402,13 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
    * @throws PropertiesManagerException excepción
    */
   private Properties loadPropertiesFromFile(File file) throws PropertiesManagerException {
-    LOGGER.info(file.getName());
+    LOGGER.debug(file.getName());
     validateFile(file);
 
     try (InputStream in = new BufferedInputStream(new FileInputStream(file))) {
       Properties props = new Properties();
       props.load(in);
-      LOGGER.info(props);
+      LOGGER.debug(props);
       return props;
     } catch (IOException ex) {
       throw new PropertiesManagerException("Error cargando archivo " + file.getName(), ex);
@@ -424,7 +424,7 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
   private void printPropertiesInternal(Properties props) throws PropertiesManagerException {
     props.forEach((k, v) -> {
       String val = isSensitiveKey(k.toString()) ? Constantes.KEY_SENSITIVE_VALUE : v.toString();
-      LOGGER.info("{} = {}", k, val);
+      LOGGER.debug("{} = {}", k, val);
     });
   }
 
