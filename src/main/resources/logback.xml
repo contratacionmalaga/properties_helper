@@ -8,7 +8,7 @@
     <property name="LOG_PATH" value="logs"/>
 
     <property name="LOG_PATTERN"
-              value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{30} - %msg%n"/>
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%file:%line] - %msg%n"/>
 
     <!-- ===================== -->
     <!-- APPENDER CONSOLA -->
@@ -55,7 +55,7 @@
 
     <!-- Detalle técnico (solo si subes nivel a DEBUG) -->
     <logger name="local.jarios.properties.api" level="info"/>
-    <logger name="local.jarios.properties.helpers" level="warn"/>
+    <logger name="local.jarios.properties.helpers" level="info"/>
 
     <!-- ===================== -->
     <!-- ROOT -->

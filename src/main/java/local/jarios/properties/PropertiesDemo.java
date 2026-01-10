@@ -57,8 +57,7 @@ public class PropertiesDemo {
 
     } catch (PropertiesManagerException ex) {
 
-      FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
-
+      FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR, ex.getMessage());
     }
   }
 
@@ -69,43 +68,42 @@ public class PropertiesDemo {
     log.info("=== INICIANDO DEMO DEL PROPERTIES MANAGER ===");
 
     try {
-      // 1. Configuración inicial
+
+      // Configuración inicial
       testConfigurationMethods();
 
-      // 2. Añadir propiedades y listar ficheros
+      // Añadir propiedades y listar ficheros
       testAddPropertiesAndListFiles();
 
-      // 2. Carga de propiedades de prueba
+      // Carga de propiedades de prueba
       loadTestProperties();
 
-      // 3. Obtención de propiedades
+      // Obtención de propiedades
       testPropertyRetrieval();
 
-      // 4. Impresión de propiedades
+      // Impresión de propiedades
       testPropertyPrinting();
 
-      // 5. Exportación a JSON
+      // Exportación a JSON
       testJsonExport();
 
-      // 6. Validación de claves requeridas
+      // Validación de claves requeridas
       testKeyValidation();
 
-      // 7. Recarga de propiedades
+      // Recarga de propiedades
       testReload();
 
-
-
-      // 9. Casos de error
+      // Casos de error
       testErrorCases(); // <-- Aquí la llamada que faltaba
 
-      // 10. Prueba hasLoaded y setProperty
+      // Prueba hasLoaded y setProperty
       testHasLoadedAndSetProperty();
 
       log.info("=== DEMO COMPLETADO EXITOSAMENTE ===");
 
     } catch (Exception ex) {
 
-      FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
+      FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR, ex.getMessage());
     }
   }
 
@@ -113,7 +111,7 @@ public class PropertiesDemo {
    * Prueba métodos de configuración del directorio y clave secreta.
    */
   private static void testConfigurationMethods() {
-    log.info("--- TEST 01 - Probando métodos de configuración ---");
+    log.info("--- TEST - Probando métodos de configuración ---");
 
     try {
       // Configurar directorio
@@ -137,7 +135,7 @@ public class PropertiesDemo {
 
     } catch (PropertiesManagerException ex) {
 
-      FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
+      logException("testConfigurationMethods", ex);
     }
   }
 
@@ -145,7 +143,7 @@ public class PropertiesDemo {
    * Prueba la funcionalidad de añadir propiedades en memoria y listar ficheros cargados.
    */
   private static void testAddPropertiesAndListFiles() {
-    log.info("--- TEST 02 - Probando adición de propiedades y listado de ficheros ---");
+    log.info("--- TEST - Probando adición de propiedades y listado de ficheros ---");
 
     try {
       // Crear un nuevo conjunto de propiedades
@@ -180,7 +178,7 @@ public class PropertiesDemo {
 
     } catch (PropertiesManagerException ex) {
 
-      FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
+      logException("testAddPropertiesAndListFiles", ex);
     }
   }
 
@@ -189,7 +187,7 @@ public class PropertiesDemo {
    */
   private static void loadTestProperties() {
     log.info(
-        "--- TEST 03 - Cargando propiedades desde los ficheros ubicados en /{}",
+        "--- TEST - Cargando propiedades desde los ficheros ubicados en /{}",
         Constantes.PROPERTIES_DIR);
 
     try {
@@ -198,10 +196,9 @@ public class PropertiesDemo {
       propertiesManager.loadAllProperties();
       propertiesManager.printAllProperties();
 
-    } catch (PropertiesManagerException e) {
+    } catch (PropertiesManagerException ex) {
 
-      e.getStackTrace();
-      FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
+      logException("loadTestProperties", ex);
     }
   }
 
@@ -209,7 +206,7 @@ public class PropertiesDemo {
    * Prueba la obtención de propiedades individuales y conjuntos completos.
    */
   private static void testPropertyRetrieval() {
-    log.info("--- TEST 04 - Probando obtención de propiedades ---");
+    log.info("--- TEST - Probando obtención de propiedades ---");
 
     try {
       // Obtener propiedades individuales
@@ -236,9 +233,9 @@ public class PropertiesDemo {
                   fileName,
                   allProps.get(fileName).size()));
 
-    } catch (PropertiesManagerException e) {
+    } catch (PropertiesManagerException ex) {
 
-      FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
+      logException("testPropertyRetrieval", ex);
     }
   }
 
@@ -246,7 +243,7 @@ public class PropertiesDemo {
    * Prueba la impresión de propiedades en logs.
    */
   private static void testPropertyPrinting() {
-    log.info("--- Probando impresión de propiedades ---");
+    log.info("--- TEST - Probando impresión de propiedades ---");
 
     try {
       // Imprimir propiedades de un archivo específico
@@ -261,9 +258,9 @@ public class PropertiesDemo {
       log.info("Imprimiendo TODAS las propiedades:");
       propertiesManager.printAllProperties();
 
-    } catch (PropertiesManagerException e) {
+    } catch (PropertiesManagerException ex) {
 
-      FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
+      logException("testPropertyPrinting", ex);
     }
   }
 
@@ -271,7 +268,7 @@ public class PropertiesDemo {
    * Prueba la exportación a formato JSON.
    */
   private static void testJsonExport() {
-    log.info("--- Probando exportación a JSON ---");
+    log.info("--- TEST - Probando exportación a JSON ---");
 
     try {
       // Exportar un archivo específico sin enmascaramiento
@@ -292,9 +289,9 @@ public class PropertiesDemo {
       log.info("JSON de TODAS las propiedades (con enmascaramiento)");
       log.info(allJson);
 
-    } catch (PropertiesManagerException e) {
+    } catch (PropertiesManagerException ex) {
 
-      FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
+      logException("testJsonExport", ex);
     }
   }
 
@@ -302,7 +299,7 @@ public class PropertiesDemo {
    * Prueba la validación de claves requeridas.
    */
   private static void testKeyValidation() {
-    log.info("--- Probando validación de claves requeridas ---");
+    log.info("--- TEST - Probando validación de claves requeridas ---");
 
     try {
       // Validar claves requeridas que existen
@@ -329,9 +326,9 @@ public class PropertiesDemo {
         FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
       }
 
-    } catch (PropertiesManagerException e) {
+    } catch (PropertiesManagerException ex) {
 
-      FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
+      logException("testKeyValidation", ex);
     }
   }
 
@@ -339,7 +336,7 @@ public class PropertiesDemo {
    * Prueba la funcionalidad de recarga.
    */
   private static void testReload() {
-    log.info("--- Probando recarga de propiedades ---");
+    log.info("--- TEST - Probando recarga de propiedades ---");
 
     try {
       log.info("Ejecutando recarga...");
@@ -350,9 +347,9 @@ public class PropertiesDemo {
       Map<String, Properties> reloadedProps = propertiesManager.getAllProperties();
       log.info("Archivos disponibles después de la recarga: {}", reloadedProps.size());
 
-    } catch (PropertiesManagerException e) {
+    } catch (PropertiesManagerException ex) {
 
-      FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
+      logException("testReload", ex);
     }
   }
 
@@ -360,52 +357,55 @@ public class PropertiesDemo {
    * Prueba casos de error y manejo de excepciones.
    */
   private static void testErrorCases() {
-    log.info("--- Probando casos de error ---");
+    log.info("--- TEST - Probando casos de error ---");
 
     // Intentar acceder a archivo inexistente
     try {
+
       String prop = propertiesManager.getProperty(
           "archivo_inexistente", "clave");
       String msg = "Probando archivo inexistente. ";
       msg = (prop == null) ? msg + "Valor devuelto: null." : msg + "Valor devuelto: " + prop;
       log.info(msg);
-    } catch (PropertiesManagerException e) {
 
-      FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
+    } catch (PropertiesManagerException ex) {
+
+      logException("testErrorCases", ex);
     }
 
     // Intentar usar nombre de archivo inválido
     try {
+
       log.info("Probando a imprimir las properties de un fichero que no exsite.");
       propertiesManager.printProperties("");
       log.info("Se esperaba una excepción para nombre vacío");
+
     } catch (PropertiesManagerException ex) {
 
-      FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
+      logException("testErrorCases", ex);
     }
 
     // Intentar configurar directorio inválido
     try {
       propertiesManager.setConfigDir("/ruta/inexistente/completamente");
-    } catch (PropertiesManagerException e) {
+    } catch (PropertiesManagerException ex) {
 
-      FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
+      logException("testErrorCases", ex);
     }
   }
-
-
 
   /**
    * Prueba la funcionalidad de hasLoaded y setProperty.
    */
   private static void testHasLoadedAndSetProperty() {
-    log.info("--- Probando hasLoaded y setProperty ---");
+    log.info("--- TEST - Probando hasLoaded y setProperty ---");
 
     String testFile = "app.properties";
     String testKey = "test.key";
     String testValue = "value123";
 
     try {
+
       // 1. Establecer una propiedad en memoria
       propertiesManager.setProperty(testFile, testKey, testValue);
       log.info("Propiedad '{}'='{}' añadida en '{}'", testKey, testValue, testFile);
@@ -423,8 +423,12 @@ public class PropertiesDemo {
       log.info("Valor recuperado para '{}': {}", testKey, valorRecuperado);
 
     } catch (PropertiesManagerException ex) {
-      log.error("Error probando hasLoaded o setProperty: {}", ex.getMessage(), ex);
-      FinalDelProgramaHelper.finalizar(TipoFinalEjecucion.ERROR);
+
+      logException("testHasLoadedAndSetProperty", ex);
     }
+  }
+
+  private static void logException(String context, PropertiesManagerException ex) {
+    log.warn("Error en {}: {}", context, ex.getMessage());
   }
 }

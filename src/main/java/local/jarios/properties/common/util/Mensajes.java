@@ -13,29 +13,17 @@ package local.jarios.properties.common.util;
  */
 public final class Mensajes {
 
-  /**
-   * Mensaje que indica el inicio de la ejecución del programa.
-   */
-  public static final String INICIO =
-      "**** Inicio del log";
+  /** Mensaje que indica el inicio de la ejecución del programa. */
+  public static final String INICIO = "==== INICIO DE LA APLICACIÓN: version-helper ====";
 
-  /**
-   * Mensaje que indica el inicio de la ejecución del programa.
-   */
-  public static final String FINAL =
-      "**** Final del log";
+  /** Mensaje que indica el final de la ejecución del programa. */
+  public static final String FINAL = "==== FINAL DE LA APLICACIÓN: version-helper ====  ";
 
-  /**
-   * Mensaje que indica que la ejecución ha finalizado correctamente.
-   */
-  public static final String FINAL_CORRECTO =
-      "La ejecución ha finalizado CORRECTAMENTE.";
+  /** Mensaje que indica que la ejecución ha finalizado correctamente. */
+  public static final String FINAL_CORRECTO = "La ejecución ha finalizado CORRECTAMENTE.";
 
-  /**
-   * Mensaje que indica que la ejecución ha finalizado con errores.
-   */
-  public static final String FINAL_ERROR =
-      "!!!! La ejecución ha finalizado con ERRORES !!!!";
+  /** Mensaje que indica que la ejecución ha finalizado con errores. */
+  public static final String FINAL_ERROR = "!!!! La ejecución ha finalizado con ERRORES !!!!";
 
   /**
    * Constructor privado para evitar la instanciación de esta clase de utilidades.
