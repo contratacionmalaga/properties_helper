@@ -1,58 +1,49 @@
 package local.jarios.properties.helpers;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
+import lombok.extern.slf4j.Slf4j;
 import java.io.File;
 
 /**
- * Ayudante de los files.
+ * Utilidades de ayuda para trabajar con {@link File}.
+ *
+ * <p>Proporciona métodos para validar ficheros y directorios.</p>
  *
  * @author Juan Antonio
- * @version 2.0
+ * @version 2.1
  * @since 2024-06-18
  */
+@Slf4j
 public final class FileHelper {
 
-  /**
-   * LOGGER del componente.
-   */
-  private static final Logger LOGGER = LogManager.getLogger("local.jarios.properties");
-
-
-  /**
-   * Constructro privado de la clase -- Evita es instanciamiento.
-   */
   private FileHelper() {
-
-    // Constructor vacío
+    // Constructor privado para evitar instanciación
   }
 
   /**
-   * Analiza si un String que se pasa es un File válido (EXISTE, SE PUEDA LEER, .entity..).
+   * Verifica si un fichero es inválido.
+   * <p>Un fichero es inválido si es null, no existe, no es un fichero o no se puede leer.</p>
    *
-   * @param file Fichero con la ruta absoluta
-   * @return Devuelve un valor indicando si el fichero es valido
+   * @param file Fichero a verificar
+   * @return {@code true} si el fichero es inválido, {@code false} si es válido
    */
   public static boolean isInvalidFile(File file) {
-
     if (file == null) {
-      LOGGER.debug("[isInvalidFile] - El fichero es null.");
+      log.debug("El fichero es null.");
       return true;
     }
 
     if (!file.exists()) {
-      LOGGER.debug("[isInvalidFile] - El fichero no existe: {}", file.getAbsolutePath());
+      log.debug("El fichero no existe: {}", file.getAbsolutePath());
       return true;
     }
 
     if (!file.isFile()) {
-      LOGGER.debug("[isInvalidFile] - El fichero no es un fichero: {}", file.getAbsolutePath());
+      log.debug("El fichero no es un fichero: {}", file.getAbsolutePath());
       return true;
     }
 
     if (!file.canRead()) {
-      LOGGER.debug("[isInvalidFile] - El fichero no se puede leer: {}", file.getAbsolutePath());
+      log.debug("El fichero no se puede leer: {}", file.getAbsolutePath());
       return true;
     }
 
@@ -60,33 +51,30 @@ public final class FileHelper {
   }
 
   /**
-   * Analiza si un String que se pasa es un File válido (EXISTE, SE PUEDA LEER, .entity..).
+   * Verifica si un directorio es inválido.
+   * <p>Un directorio es inválido si es null, no existe, no es un directorio o no se puede leer.</p>
    *
-   * @param directory Fichero con la ruta absoluta
-   * @return Devuelve un valor indicando si el fichero es valido y en caso contrario indica el
-   * motivo
+   * @param directory Directorio a verificar
+   * @return {@code true} si el directorio es inválido, {@code false} si es válido
    */
   public static boolean isInvalidDirectory(File directory) {
-
     if (directory == null) {
-      LOGGER.debug("[isInvalidDirectory] - El directorio es null.");
+      log.debug("El directorio es null.");
       return true;
     }
 
     if (!directory.exists()) {
-      LOGGER.debug("[isInvalidFile] - El directorio no existe: {}", directory.getAbsolutePath());
+      log.debug("El directorio no existe: {}", directory.getAbsolutePath());
       return true;
     }
 
     if (!directory.isDirectory()) {
-      LOGGER.debug("[isInvalidFile] - El directorio no es un Directorio: {}",
-                   directory.getAbsolutePath());
+      log.debug("El archivo no es un directorio: {}", directory.getAbsolutePath());
       return true;
     }
 
     if (!directory.canRead()) {
-      LOGGER.debug("[isInvalidFile] - El directorio no se puede leer: {}",
-                   directory.getAbsolutePath());
+      log.debug("El directorio no se puede leer: {}", directory.getAbsolutePath());
       return true;
     }
 
