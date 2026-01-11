@@ -53,7 +53,7 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
   @Override
   public void setConfigDir(String configDir) {
     this.configDir = (configDir == null || configDir.isBlank()) ? Constantes.PROPERTIES_DIR : configDir.trim();
-    log.info("Directorio de configuración actualizado a '{}'", this.configDir);
+    log.debug("Directorio de configuración actualizado a '{}'", this.configDir);
   }
 
   @Override
@@ -64,7 +64,7 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
   @Override
   public synchronized void setSensitiveKeys(Set<String> keys) {
     this.sensitiveKeys = (keys == null) ? Collections.emptySet() : Set.copyOf(keys);
-    log.info("Claves sensibles definidas: {}", this.sensitiveKeys);
+    log.debug("Claves sensibles definidas: {}", this.sensitiveKeys);
   }
 
   @Override
@@ -85,7 +85,7 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
     }
 
     propertiesMap = Collections.unmodifiableMap(tempMap);
-    log.info("Se cargaron {} archivos de propiedades", propertiesMap.size());
+    log.debug("Se cargaron {} archivos de propiedades", propertiesMap.size());
   }
 
   @Override
@@ -102,7 +102,7 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
     Properties previous = newMap.put(fileName, props);
     propertiesMap = Collections.unmodifiableMap(newMap);
 
-    log.info(previous == null
+    log.debug(previous == null
                  ? "Archivo '{}' añadido con {} propiedades"
                  : "Archivo '{}' reemplazado: antes {} propiedades, ahora {}",
              fileName, props.size(), previous == null ? 0 : previous.size(), props.size());
