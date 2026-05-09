@@ -10,8 +10,8 @@ import java.util.Set;
  * Interfaz que define las operaciones para la gestión centralizada de ficheros .properties. Esta
  * API permite:
  * <ul>
- *   <li>Carga de múltiples ficheros .properties desde una carpeta externa o el classpath.</li>
- *   <li>Acceso inmutable a las propiedades para evitar modificaciones accidentales.</li>
+ *   <li>Carga de múltiples ficheros .properties desde una carpeta externa.</li>
+ *   <li>Acceso mediante copias defensivas para evitar modificaciones accidentales.</li>
  *   <li>Ocultamiento de claves sensibles en operaciones de impresión y exportación.</li>
  *   <li>Exportación de propiedades a formato JSON.</li>
  *   <li>Validación de la presencia de claves requeridas en un fichero.</li>
@@ -34,7 +34,8 @@ public interface PropertiesManagerService {
   /**
    * Establece las claves sensibles que deben ocultarse durante la impresión y exportación.
    *
-   * @param keys Conjunto de claves sensibles. Si es {@code null} o vacío, no se ocultará ninguna.
+   * @param keys Conjunto de claves sensibles. Si es {@code null} o vacío, se usarán las claves por
+   *             defecto.
    * @throws PropertiesManagerException si ocurre un error al establecer las claves.
    */
   void setSensitiveKeys(Set<String> keys) throws PropertiesManagerException;
@@ -50,7 +51,7 @@ public interface PropertiesManagerService {
    * Carga todos los ficheros .properties desde el directorio de configuración. Reemplaza cualquier
    * carga previa.
    *
-   * @throws PropertiesManagerException si falla la carga desde el directorio o el classpath.
+   * @throws PropertiesManagerException si falla la carga desde el directorio.
    */
   void loadAllProperties() throws PropertiesManagerException;
 
@@ -72,10 +73,10 @@ public interface PropertiesManagerService {
   void printAllProperties() throws PropertiesManagerException;
 
   /**
-   * Devuelve una copia inmutable de las propiedades de un fichero específico.
+   * Devuelve una copia defensiva de las propiedades de un fichero específico.
    *
    * @param fileNameWithoutExtension Nombre del fichero sin extensión.
-   * @return Objeto {@code Properties} inmutable.
+   * @return Copia de las propiedades del fichero.
    * @throws PropertiesManagerException si el fichero no está disponible o el nombre es inválido.
    */
   Properties getProperties(String fileNameWithoutExtension) throws PropertiesManagerException;
@@ -92,7 +93,7 @@ public interface PropertiesManagerService {
       throws PropertiesManagerException;
 
   /**
-   * Devievle un booleano indicando si un fichero de propiedades ya ha sido cargado.
+   * Devuelve un booleano indicando si un fichero de propiedades ya ha sido cargado.
    *
    * @param fileName fichero que analizamos.
    * @return boolean con el valor indicando si se ha cargado o no.
@@ -105,13 +106,14 @@ public interface PropertiesManagerService {
    *
    * @param fileNameWithoutExtension Nombre del fichero sin extensión.
    * @param key                      Clave a buscar.
-   * @return Valor encontrado o {@code null} si no existe.
-   * @throws PropertiesManagerException si el nombre del fichero o la clave son inválidos.
+   * @return Valor encontrado.
+   * @throws PropertiesManagerException si el nombre del fichero o la clave son inválidos, o si la
+   *                                    clave no existe.
    */
   String getProperty(String fileNameWithoutExtension, String key) throws PropertiesManagerException;
 
   /**
-   * Devuelve un mapa inmutable con todos los ficheros de propiedades cargados.
+   * Devuelve un mapa inmutable con copias defensivas de todos los ficheros de propiedades cargados.
    *
    * @return Mapa con el nombre del fichero como clave y sus {@code Properties} como valor.
    * @throws PropertiesManagerException si ocurre un error al acceder a los datos.

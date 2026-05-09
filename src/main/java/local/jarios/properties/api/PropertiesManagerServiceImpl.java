@@ -15,7 +15,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -37,7 +44,7 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
 
   private volatile String configDir = Constantes.PROPERTIES_DIR;
   private volatile Map<String, Properties> propertiesMap = Collections.emptyMap();
-  private volatile Set<String> sensitiveKeys = Collections.emptySet();
+  private volatile Set<String> sensitiveKeys = Constantes.DEFAULT_SENSITIVE_KEYS;
 
   private PropertiesManagerServiceImpl() {}
 
@@ -57,13 +64,15 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
   }
 
   @Override
-  public Set<String> getSensitiveKeys() {
-    return sensitiveKeys;
+  public synchronized Set<String> getSensitiveKeys() {
+    return Set.copyOf(sensitiveKeys);
   }
 
   @Override
   public synchronized void setSensitiveKeys(Set<String> keys) {
-    this.sensitiveKeys = (keys == null) ? Collections.emptySet() : Set.copyOf(keys);
+    this.sensitiveKeys = (keys == null || keys.isEmpty())
+        ? Constantes.DEFAULT_SENSITIVE_KEYS
+        : Set.copyOf(keys);
     log.debug("Claves sensibles definidas: {}", this.sensitiveKeys);
   }
 
@@ -81,7 +90,7 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
 
     Map<String, Properties> tempMap = new HashMap<>();
     for (File f : files) {
-      tempMap.put(stripExtension(f.getName()), loadPropertiesFromFile(f));
+      tempMap.put(normalizeFileName(f.getName()), loadPropertiesFromFile(f));
     }
 
     propertiesMap = Collections.unmodifiableMap(tempMap);
@@ -94,37 +103,44 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
   }
 
   @Override
-  public void addProperties(String fileName, Properties props) throws PropertiesManagerException {
+  public synchronized void addProperties(String fileName, Properties props)
+      throws PropertiesManagerException {
     validateFileName(fileName);
     validateProperties(props);
 
+    String normalizedFileName = normalizeFileName(fileName);
     Map<String, Properties> newMap = new HashMap<>(propertiesMap);
-    Properties previous = newMap.put(fileName, props);
+    Properties previous = newMap.put(normalizedFileName, copyProperties(props));
     propertiesMap = Collections.unmodifiableMap(newMap);
 
     log.debug(previous == null
                  ? "Archivo '{}' añadido con {} propiedades"
                  : "Archivo '{}' reemplazado: antes {} propiedades, ahora {}",
-             fileName, props.size(), previous == null ? 0 : previous.size(), props.size());
+             normalizedFileName, props.size(), previous == null ? 0 : previous.size(), props.size());
   }
 
   @Override
   public boolean hasLoaded(String fileName) throws PropertiesManagerException {
+    validateFileName(fileName);
     validateMap(propertiesMap);
-    return propertiesMap.containsKey(fileName);
+    return propertiesMap.containsKey(normalizeFileName(fileName));
   }
 
   @Override
-  public void setProperty(String fileName, String property, String value) throws PropertiesManagerException {
+  public synchronized void setProperty(String fileName, String property, String value)
+      throws PropertiesManagerException {
     validateFileName(fileName);
     validateKey(property);
 
+    String normalizedFileName = normalizeFileName(fileName);
     Map<String, Properties> newMap = new HashMap<>(propertiesMap);
-    Properties props = newMap.computeIfAbsent(fileName, k -> new Properties());
+    Properties props = copyProperties(newMap.getOrDefault(normalizedFileName, new Properties()));
     props.setProperty(property, value);
+    newMap.put(normalizedFileName, props);
     propertiesMap = Collections.unmodifiableMap(newMap);
 
-    log.debug("Propiedad '{}' de '{}' actualizada a '{}'", property, fileName, maskIfSensitive(property, value));
+    log.debug("Propiedad '{}' de '{}' actualizada a '{}'",
+        property, normalizedFileName, maskIfSensitive(property, value));
   }
 
   @Override
@@ -132,7 +148,7 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
     validateFileName(fileName);
     validateMap(propertiesMap);
 
-    Properties props = propertiesMap.get(fileName);
+    Properties props = propertiesMap.get(normalizeFileName(fileName));
     if (props == null) {
       throw new PropertiesManagerException("Archivo no cargado: " + fileName);
     }
@@ -153,21 +169,32 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
   public Properties getProperties(String fileName) throws PropertiesManagerException {
     validateFileName(fileName);
     validateMap(propertiesMap);
-    return propertiesMap.getOrDefault(fileName, new Properties());
+    return copyProperties(propertiesMap.getOrDefault(normalizeFileName(fileName), new Properties()));
   }
 
   @Override
-  public String getProperty(String fileName, String key) throws PropertiesManagerException {
+  public synchronized String getProperty(String fileName, String key) throws PropertiesManagerException {
     validateFileName(fileName);
     validateKey(key);
 
-    Properties props = getProperties(fileName);
-    String value = props.getProperty(key);
-    if (value == null) {
-      throw new PropertiesManagerException(
-          String.format("Clave inexistente '%s' en '%s'", key, fileName));
+    Properties props = propertiesMap.get(normalizeFileName(fileName));
+    String value = props == null ? null : props.getProperty(key);
+    if (value != null) {
+      return value;
     }
-    return value;
+
+    value = System.getenv(key);
+    if (value != null) {
+      return value;
+    }
+
+    value = System.getProperty(key);
+    if (value != null) {
+      return value;
+    }
+
+    throw new PropertiesManagerException(
+        String.format("Clave inexistente '%s' en '%s'", key, fileName));
   }
 
   @Override
@@ -178,7 +205,9 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
 
   @Override
   public Map<String, Properties> getAllProperties() throws PropertiesManagerException {
-    return Collections.unmodifiableMap(propertiesMap);
+    Map<String, Properties> copy = new HashMap<>();
+    propertiesMap.forEach((file, props) -> copy.put(file, copyProperties(props)));
+    return Collections.unmodifiableMap(copy);
   }
 
   @Override
@@ -188,7 +217,7 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
 
     if (requiredKeys == null || requiredKeys.isEmpty()) return true;
 
-    Properties props = propertiesMap.get(fileName);
+    Properties props = propertiesMap.get(normalizeFileName(fileName));
     if (props == null) return false;
 
     return requiredKeys.stream().allMatch(props::containsKey);
@@ -199,7 +228,7 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
     validateFileName(fileName);
     validateMap(propertiesMap);
 
-    Properties props = propertiesMap.get(fileName);
+    Properties props = propertiesMap.get(normalizeFileName(fileName));
     if (props == null) {
       throw new PropertiesManagerException("Archivo no cargado: " + fileName);
     }
@@ -226,7 +255,7 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
       Properties props = new Properties();
       props.load(in);
       log.debug("Archivo '{}' cargado con {} propiedades", file.getName(), props.size());
-      return props;
+      return copyProperties(props);
     } catch (IOException ex) {
       log.error("Error cargando archivo '{}'", file.getName(), ex);
       throw new PropertiesManagerException("Error cargando archivo " + file.getName(), ex);
@@ -247,10 +276,12 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
     return sensitiveKeys.stream().map(s -> s.toLowerCase(Locale.ROOT)).anyMatch(lower::contains);
   }
 
-  private String stripExtension(String filename) throws PropertiesManagerException {
+  private String normalizeFileName(String filename) throws PropertiesManagerException {
     validateFileName(filename);
-    int idx = filename.lastIndexOf('.');
-    return (idx == -1) ? filename : filename.substring(0, idx);
+    String trimmed = filename.trim();
+    return trimmed.toLowerCase(Locale.ROOT).endsWith(Constantes.PROPERTIES_EXT)
+        ? trimmed.substring(0, trimmed.length() - Constantes.PROPERTIES_EXT.length())
+        : trimmed;
   }
 
   private <K, V> void validateMap(Map<K, V> map) throws PropertiesManagerException {
@@ -297,6 +328,14 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
                 ? Constantes.KEY_SENSITIVE_VALUE
                 : e.getValue().toString()
         ));
+  }
+
+  private Properties copyProperties(Properties source) {
+    Properties copy = new Properties();
+    if (source != null) {
+      copy.putAll(source);
+    }
+    return copy;
   }
 
   private String writeJson(Object obj) throws PropertiesManagerException {

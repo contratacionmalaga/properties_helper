@@ -21,8 +21,8 @@ public final class FinalDelProgramaHelper {
      * Finaliza la ejecución del programa.
      * @param tipoFinal Tipo de finalización
      */
-    public static void finalizar(TipoFinalEjecucion tipoFinal) {
-        finalizar(tipoFinal, null);
+    public static int finalizar(TipoFinalEjecucion tipoFinal) {
+        return finalizar(tipoFinal, null);
     }
 
     /**
@@ -30,7 +30,7 @@ public final class FinalDelProgramaHelper {
      * @param tipoFinal Tipo de finalización
      * @param mensajeError Mensaje opcional, solo usado si tipoFinal es ERROR
      */
-    public static void finalizar(TipoFinalEjecucion tipoFinal, String mensajeError) {
+    public static int finalizar(TipoFinalEjecucion tipoFinal, String mensajeError) {
         String mensaje;
         int exitCode;
 
@@ -53,7 +53,6 @@ public final class FinalDelProgramaHelper {
         System.out.flush();
         System.err.flush();
 
-        // Salir
-        System.exit(exitCode);
+        return exitCode;
     }
 }
