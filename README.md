@@ -142,3 +142,10 @@ El proyecto esta configurado para publicar en GitHub Packages mediante
 - resultado correcto de `clean verify`;
 - resultado correcto de `-Pquality verify`;
 - ausencia de vulnerabilidades altas en dependencias runtime.
+
+## Releases
+
+Al publicar una GitHub Release con tag `v6.0.0` o cualquier tag con formato
+`v<version>`, el workflow `Publish Release Package` compila el proyecto, publica
+el paquete Maven asociado en GitHub Packages y adjunta el JAR principal y el JAR
+de fuentes a la release.

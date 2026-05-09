@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: Release tag to publish, for example v5.2.0
+        description: Release tag to publish, for example v6.0.0
         required: true
 
 permissions:
@@ -26,7 +26,7 @@ jobs:
           TAG="${{ github.event.release.tag_name || inputs.release_tag }}"
           VERSION="${TAG#v}"
           if [[ -z "$TAG" || -z "$VERSION" || "$TAG" == "$VERSION" ]]; then
-            echo "Release tag must use v<version> format, for example v5.2.0" >&2
+            echo "Release tag must use v<version> format, for example v6.0.0" >&2
             exit 1
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
