@@ -1,0 +1,70 @@
+name: Publish Release Package
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Release tag to publish, for example v6.0.0
+        required: true
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Resolve release tag
+        id: release
+        shell: bash
+        run: |
+          TAG="${{ github.event.release.tag_name || inputs.release_tag }}"
+          VERSION="${TAG#v}"
+          if [[ -z "$TAG" || -z "$VERSION" || "$TAG" == "$VERSION" ]]; then
+            echo "Release tag must use v<version> format, for example v6.0.0" >&2
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.release.outputs.tag }}
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+          server-id: github-releases
+          server-username: GITHUB_ACTOR
+          server-password: GITHUB_TOKEN
+
+      - name: Set Maven project version from tag
+        run: mvn -B -ntp versions:set -DnewVersion=${{ steps.release.outputs.version }} -DgenerateBackupPoms=false
+
+      - name: Verify
+        run: mvn -B -ntp clean verify
+
+      - name: Publish to GitHub Packages
+        run: mvn -B -ntp -DskipTests deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Attach artifacts to GitHub Release
+        if: github.event_name == 'release'
+        shell: bash
+        run: |
+          gh release upload "${{ steps.release.outputs.tag }}" \
+            target/properties-helper-${{ steps.release.outputs.version }}.jar \
+            target/properties-helper-${{ steps.release.outputs.version }}-sources.jar \
+            --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

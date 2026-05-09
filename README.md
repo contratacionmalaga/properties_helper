@@ -1,87 +1,151 @@
 # properties-helper
 
-Gestión centralizada y segura de ficheros `.properties` en Java con funcionalidades avanzadas como carga desde carpeta externa o classpath, inmutabilidad, ocultamiento de claves sensibles, exportación a JSON y validación de claves requeridas.
+Libreria Java para cargar, consultar, validar y exportar ficheros `.properties`
+desde un directorio de configuracion.
 
----
+## Requisitos
 
-## Descripción
+- Java 21.
+- Maven 3.9.x o Maven Wrapper incluido en el repositorio.
 
-`properties-helper` es una librería Java para manejar configuraciones almacenadas en ficheros `.properties` de forma centralizada, segura y flexible.
+## Instalacion local
 
-Implementa un **patrón Singleton thread-safe** que permite:
+```powershell
+.\mvnw.cmd clean verify
+```
 
-- Cargar múltiples ficheros `.properties` desde una carpeta externa `config` o desde los recursos del classpath (por ejemplo, empaquetados en el JAR).
-- Mantener las propiedades inmutables para evitar modificaciones accidentales en tiempo de ejecución.
-- Ocultar valores sensibles (como contraseñas o claves API) en impresión por consola o exportaciones.
-- Exportar propiedades a formato JSON, con opción de enmascarar valores sensibles.
-- Validar que un fichero `.properties` contenga claves obligatorias.
-- Recargar todas las propiedades de forma sincronizada.
+En sistemas Unix:
 
----
+```bash
+./mvnw clean verify
+```
 
-## Funcionalidades principales
+## API principal
 
-- **Carga automática** de ficheros `.properties` en la carpeta `config/` o desde recursos empaquetados.
-- **Inmutabilidad** de los objetos `Properties` para mayor seguridad.
-- **Ocultamiento de claves sensibles** (`password`, `secret`, `token`, etc.).
-- **Exportación a JSON** (individual o todas las propiedades).
-- **Validación** de claves obligatorias.
-- **Recarga** segura de configuraciones en caliente.
-- Manejo de excepciones específicas con `PropertiesLoadException`.
-
----
-
-## Estructura principal
-
-- `PropertiesManager`: clase Singleton encargada de gestionar la carga, acceso, validación, exportación y recarga de propiedades.
-- `PropertiesLoadException`: excepción personalizada para errores en carga o validación.
-- `App`: clase ejemplo que muestra el uso del `PropertiesManager`.
-
----
-
-## Uso básico desde otra aplicación
-
-1. **Incluir el módulo en tu proyecto**
-    - Agrega la dependencia (si está publicado en repositorio) o incluye el JAR generado en tu classpath.
-
-2. **Obtener la instancia del `PropertiesManager` (Singleton)**
+La entrada publica es `PropertiesManagerService`:
 
 ```java
-public static void main(String[] args) {
-   try {
-      PropertiesManager manager = PropertiesManager.getInstance();
+PropertiesManagerService manager = PropertiesManagerServiceImpl.getInstance();
+manager.setConfigDir("properties");
+manager.loadAllProperties();
+```
 
-      // 1. Imprimir todas las properties cargadas (con ocultación de sensibles)
-      log.info("---- Imprimiendo todas las propiedades ----");
-      manager.printAllProperties();
+Los nombres de fichero pueden indicarse con o sin extension. Por ejemplo, `app`
+y `app.properties` apuntan al mismo fichero logico.
 
-      // 2. Imprimir propiedades de un fichero específico ("app")
-      log.info("---- Propiedades del fichero 'app' ----");
-      manager.printProperties("app");
+## Uso basico
 
-      // 3. Obtener una propiedad concreta, con fallback a variables de entorno/sistema
-      String dbUrl = manager.getProperty("db", "db.url");
-      log.info("db.url = {}", dbUrl);
+```java
+import local.jarios.properties.api.PropertiesManagerService;
+import local.jarios.properties.api.PropertiesManagerServiceImpl;
+import local.jarios.properties.exception.PropertiesManagerException;
 
-      // 4. Exportar propiedades a JSON ocultando valores sensibles
-      String appJsonMasked = manager.exportAsJson("app", true);
-      log.info("JSON exportado de 'app' con sensibles ocultos:\n{}", appJsonMasked);
+public class Example {
 
-      // 5. Exportar todas las propiedades a JSON sin ocultar (para ver diferencias)
-      String allJson = manager.exportAllAsJson(false);
-      log.info("JSON exportado de todas las propiedades (sin ocultar):\n{}", allJson);
+  public static void main(String[] args) {
+    PropertiesManagerService manager = PropertiesManagerServiceImpl.getInstance();
 
-      // 6. Validar que el fichero 'app' contenga claves obligatorias
-      Set<String> requiredKeys = Set.of("app.name", "app.version");
-      manager.validateRequiredKeys("app", requiredKeys);
-      log.info("Validación de claves requeridas en 'app' completada OK.");
+    try {
+      manager.setConfigDir("properties");
+      manager.loadAllProperties();
 
-      // 7. Recargar propiedades (por si se modificaron los ficheros externos)
-      manager.reload();
-      log.info("Propiedades recargadas exitosamente.");
+      String appName = manager.getProperty("app", "app.name");
+      String json = manager.exportPropertiesToJson("app.properties", true);
 
-   } catch (PropertiesLoadException e) {
-      log.error("Error gestionando propiedades", e);
-   }
+      System.out.println(appName);
+      System.out.println(json);
+    } catch (PropertiesManagerException ex) {
+      System.err.println("Error cargando propiedades: " + ex.getMessage());
+    }
+  }
 }
 ```
+
+## Resolucion de propiedades
+
+`getProperty(fileName, key)` busca en este orden:
+
+1. Fichero `.properties` cargado.
+2. Variable de entorno con el mismo nombre de clave.
+3. Propiedad de sistema Java con el mismo nombre de clave.
+
+Si la clave no existe en ningun origen, se lanza `PropertiesManagerException`.
+
+## Seguridad y claves sensibles
+
+La libreria enmascara por defecto claves cuyo nombre contenga:
+
+- `password`
+- `secret`
+- `token`
+- `apikey`
+- `api_key`
+- `credential`
+
+El valor enmascarado se representa como `******`.
+
+Se pueden reemplazar las claves sensibles:
+
+```java
+manager.setSensitiveKeys(Set.of("password", "private.key"));
+```
+
+Si se llama a `setSensitiveKeys(null)` o con un conjunto vacio, se restauran las
+claves sensibles por defecto.
+
+## Copias defensivas
+
+Los metodos `getProperties` y `getAllProperties` devuelven copias defensivas.
+Modificar los objetos devueltos no altera el estado interno del singleton.
+
+## Operaciones disponibles
+
+- `setConfigDir(String configDir)`
+- `loadAllProperties()`
+- `reload()`
+- `getProperty(String fileName, String key)`
+- `getProperties(String fileName)`
+- `getAllProperties()`
+- `addProperties(String fileName, Properties properties)`
+- `setProperty(String fileName, String property, String value)`
+- `hasLoaded(String fileName)`
+- `getListFiles()`
+- `validateRequiredKeys(String fileName, Set<String> requiredKeys)`
+- `exportPropertiesToJson(String fileName, boolean maskSensitiveValues)`
+- `exportAllPropertiesToJson(boolean maskSensitiveValues)`
+- `setSensitiveKeys(Set<String> keys)`
+- `getSensitiveKeys()`
+
+## Calidad
+
+Validacion basica:
+
+```powershell
+.\mvnw.cmd clean verify
+```
+
+Validacion de calidad estatica:
+
+```powershell
+.\mvnw.cmd -Pquality verify
+```
+
+El perfil `quality` ejecuta Checkstyle, SpotBugs y genera reporte JaCoCo.
+
+## Publicacion
+
+El proyecto esta configurado para publicar en GitHub Packages mediante
+`distributionManagement`. Antes de publicar, verifica:
+
+- version del artefacto en `pom.xml`;
+- credenciales Maven para GitHub Packages;
+- resultado correcto de `clean verify`;
+- resultado correcto de `-Pquality verify`;
+- ausencia de vulnerabilidades altas en dependencias runtime.
+
+## Releases
+
+Al publicar una GitHub Release con tag `v6.0.0` o cualquier tag con formato
+`v<version>`, el workflow `Publish Release Package` compila el proyecto, publica
+el paquete Maven asociado en GitHub Packages y adjunta el JAR principal y el JAR
+de fuentes a la release.

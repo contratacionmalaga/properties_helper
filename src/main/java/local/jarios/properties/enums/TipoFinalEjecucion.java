@@ -1,7 +1,5 @@
 package local.jarios.properties.enums;
 
-import lombok.extern.slf4j.Slf4j;
-
 /**
  * Enum que representa los posibles estados finales de ejecución del programa.
  *
@@ -12,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
  * @version 2.0
  * @since 2024-06-18
  */
-@Slf4j
 public enum TipoFinalEjecucion {
 
   /**

@@ -1,5 +1,7 @@
 package local.jarios.properties.common.util;
 
+import java.util.Set;
+
 /**
  * Clase que contiene constantes generales utilizadas a lo largo de la aplicación.
  *
@@ -53,6 +55,18 @@ public final class Constantes {
    * para filtrar archivos o construir rutas.
    */
   public static final String PROPERTIES_EXT = ".properties";
+
+  /**
+   * Claves sensibles que se ocultan por defecto en logs y exportaciones.
+   */
+  public static final Set<String> DEFAULT_SENSITIVE_KEYS = Set.of(
+      "password",
+      "secret",
+      "token",
+      "apikey",
+      "api_key",
+      "credential"
+  );
 
   /**
    * Constructor privado para evitar instanciación.
