@@ -179,6 +179,17 @@ class PropertiesManagerServiceImplTest {
     assertThat(json).doesNotContain("token-value");
   }
 
+  @Test
+  void newInstanceDoesNotShareStateWithSingleton() {
+    PropertiesManagerService isolated = PropertiesManagerServiceImpl.newInstance();
+    Properties props = new Properties();
+    props.setProperty("isolated.key", "isolated-value");
+
+    isolated.addProperties("isolated", props);
+
+    assertThat(isolated.hasLoaded("isolated")).isTrue();
+    assertThat(manager.hasLoaded("isolated")).isFalse();
+  }
   private void writeProperties(String fileName, String content) throws IOException {
     Files.writeString(tempDir.resolve(fileName), content);
   }

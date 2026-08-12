@@ -1,10 +1,10 @@
 package local.jarios.properties.api;
 
-import local.jarios.properties.exception.PropertiesManagerException;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import local.jarios.properties.exception.PropertiesManagerException;
 
 /**
  * Interfaz que define las operaciones para la gestión centralizada de ficheros .properties. Esta
@@ -54,7 +54,6 @@ public interface PropertiesManagerService {
    * @throws PropertiesManagerException si falla la carga desde el directorio.
    */
   void loadAllProperties() throws PropertiesManagerException;
-
 
   /**
    * Imprime en el log las propiedades del fichero indicado, ocultando claves sensibles.

@@ -2,14 +2,6 @@ package local.jarios.properties.api;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import local.jarios.properties.common.util.Constantes;
-import local.jarios.properties.exception.PropertiesManagerException;
-import local.jarios.properties.helpers.FileHelper;
-import local.jarios.properties.helpers.MapHelper;
-import local.jarios.properties.helpers.PropertiesHelper;
-import local.jarios.properties.helpers.StringHelper;
-import lombok.extern.slf4j.Slf4j;
-
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -24,6 +16,13 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
+import local.jarios.properties.common.util.Constantes;
+import local.jarios.properties.exception.PropertiesManagerException;
+import local.jarios.properties.helpers.FileHelper;
+import local.jarios.properties.helpers.MapHelper;
+import local.jarios.properties.helpers.PropertiesHelper;
+import local.jarios.properties.helpers.StringHelper;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Implementación singleton del servicio {@link PropertiesManagerService}.
@@ -48,8 +47,22 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
 
   private PropertiesManagerServiceImpl() {}
 
+  /**
+   * Obtiene la instancia singleton del servicio.
+   *
+   * @return instancia compartida de {@link PropertiesManagerService}
+   */
   public static PropertiesManagerService getInstance() {
     return INSTANCE;
+  }
+
+  /**
+   * Crea una instancia aislada del servicio sin compartir estado con el singleton.
+   *
+   * @return nueva instancia de {@link PropertiesManagerService}
+   */
+  public static PropertiesManagerService newInstance() {
+    return new PropertiesManagerServiceImpl();
   }
 
   @Override
@@ -59,7 +72,9 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
 
   @Override
   public void setConfigDir(String configDir) {
-    this.configDir = (configDir == null || configDir.isBlank()) ? Constantes.PROPERTIES_DIR : configDir.trim();
+    this.configDir = (configDir == null || configDir.isBlank())
+        ? Constantes.PROPERTIES_DIR
+        : configDir.trim();
     log.debug("Directorio de configuración actualizado a '{}'", this.configDir);
   }
 
@@ -116,7 +131,10 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
     log.debug(previous == null
                  ? "Archivo '{}' añadido con {} propiedades"
                  : "Archivo '{}' reemplazado: antes {} propiedades, ahora {}",
-             normalizedFileName, props.size(), previous == null ? 0 : previous.size(), props.size());
+             normalizedFileName,
+             props.size(),
+             previous == null ? 0 : previous.size(),
+             props.size());
   }
 
   @Override
@@ -169,11 +187,13 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
   public Properties getProperties(String fileName) throws PropertiesManagerException {
     validateFileName(fileName);
     validateMap(propertiesMap);
-    return copyProperties(propertiesMap.getOrDefault(normalizeFileName(fileName), new Properties()));
+    Properties props = propertiesMap.getOrDefault(normalizeFileName(fileName), new Properties());
+    return copyProperties(props);
   }
 
   @Override
-  public synchronized String getProperty(String fileName, String key) throws PropertiesManagerException {
+  public synchronized String getProperty(String fileName, String key)
+      throws PropertiesManagerException {
     validateFileName(fileName);
     validateKey(key);
 
@@ -211,20 +231,26 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
   }
 
   @Override
-  public boolean validateRequiredKeys(String fileName, Set<String> requiredKeys) throws PropertiesManagerException {
+  public boolean validateRequiredKeys(String fileName, Set<String> requiredKeys)
+      throws PropertiesManagerException {
     validateFileName(fileName);
     validateMap(propertiesMap);
 
-    if (requiredKeys == null || requiredKeys.isEmpty()) return true;
+    if (requiredKeys == null || requiredKeys.isEmpty()) {
+      return true;
+    }
 
     Properties props = propertiesMap.get(normalizeFileName(fileName));
-    if (props == null) return false;
+    if (props == null) {
+      return false;
+    }
 
     return requiredKeys.stream().allMatch(props::containsKey);
   }
 
   @Override
-  public String exportPropertiesToJson(String fileName, boolean maskSensitive) throws PropertiesManagerException {
+  public String exportPropertiesToJson(String fileName, boolean maskSensitive)
+      throws PropertiesManagerException {
     validateFileName(fileName);
     validateMap(propertiesMap);
 
@@ -241,7 +267,8 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
     validateMap(propertiesMap);
 
     Map<String, Map<String, String>> allMap = new HashMap<>();
-    propertiesMap.forEach((file, props) -> allMap.put(file, maskSensitiveKeys(props, maskSensitive)));
+    propertiesMap.forEach(
+        (file, props) -> allMap.put(file, maskSensitiveKeys(props, maskSensitive)));
 
     return writeJson(allMap);
   }
@@ -271,9 +298,13 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
   }
 
   private boolean isSensitiveKey(String key) {
-    if (StringHelper.isStringInvalid(key)) return false;
+    if (StringHelper.isStringInvalid(key)) {
+      return false;
+    }
     String lower = key.toLowerCase(Locale.ROOT);
-    return sensitiveKeys.stream().map(s -> s.toLowerCase(Locale.ROOT)).anyMatch(lower::contains);
+    return sensitiveKeys.stream()
+        .map(s -> s.toLowerCase(Locale.ROOT))
+        .anyMatch(lower::contains);
   }
 
   private String normalizeFileName(String filename) throws PropertiesManagerException {

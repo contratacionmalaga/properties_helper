@@ -65,6 +65,7 @@ jobs:
           gh release upload "${{ steps.release.outputs.tag }}" \
             target/properties-helper-${{ steps.release.outputs.version }}.jar \
             target/properties-helper-${{ steps.release.outputs.version }}-sources.jar \
+            target/properties-helper-${{ steps.release.outputs.version }}-javadoc.jar \
             --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
