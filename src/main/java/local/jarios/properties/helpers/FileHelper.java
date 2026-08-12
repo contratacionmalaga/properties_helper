@@ -1,7 +1,7 @@
 package local.jarios.properties.helpers;
 
-import lombok.extern.slf4j.Slf4j;
 import java.io.File;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Utilidades de ayuda para trabajar con {@link File}.
