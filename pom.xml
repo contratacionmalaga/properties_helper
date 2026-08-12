@@ -1,9 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>local.jarios</groupId>
+
+    <parent>
+        <groupId>local.jarios</groupId>
+        <artifactId>jarios-parent</artifactId>
+        <version>1.0.1</version>
+        <relativePath>../jarios-parent/pom.xml</relativePath>
+    </parent>
     <artifactId>properties-helper</artifactId>
-    <version>6.0.0</version>
+    <version>6.0.1</version>
     <packaging>jar</packaging>
 
     <name>properties-helper</name>
@@ -30,37 +36,16 @@
     </distributionManagement>
 
     <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
-        <maven.minimum.version>3.6.3</maven.minimum.version>
 
         <!-- Version management -->
         <version.trimmed>${project.version}</version.trimmed>
         <final.name>${project.artifactId}-${version.trimmed}</final.name>
 
         <!-- Centralización de versiones -->
-        <logback.version>1.6.2</logback.version>
-        <slf4j.version>2.0.17</slf4j.version>
-        <lombok.version>1.18.46</lombok.version>
-        <junit.version>6.1.3</junit.version>
-        <assertj.version>3.27.7</assertj.version>
-        <jackson.version>2.22.1</jackson.version>
         <checkstyle.version>11.0.0</checkstyle.version>
 
         <!-- Plugin versions -->
-        <maven.checkstyle.plugin.version>3.6.0</maven.checkstyle.plugin.version>
-        <maven.compiler.plugin.version>3.15.0</maven.compiler.plugin.version>
-        <maven.dependency.plugin.version>3.11.0</maven.dependency.plugin.version>
-        <maven.enforcer.plugin.version>3.6.3</maven.enforcer.plugin.version>
-        <maven.jar.plugin.version>3.5.0</maven.jar.plugin.version>
-        <maven.javadoc.plugin.version>3.12.0</maven.javadoc.plugin.version>
-        <maven.release.plugin.version>3.3.1</maven.release.plugin.version>
-        <maven.source.plugin.version>3.4.0</maven.source.plugin.version>
-        <maven.surefire.plugin.version>3.5.5</maven.surefire.plugin.version>
         <jacoco.plugin.version>0.8.15</jacoco.plugin.version>
-        <spotbugs.plugin.version>4.10.3.0</spotbugs.plugin.version>
-        <versions.plugin.version>2.21.0</versions.plugin.version>
         <jacoco.minimum.instruction.coverage>0.70</jacoco.minimum.instruction.coverage>
     </properties>
 
@@ -98,14 +83,7 @@
         <!-- Dependencias para JUnit 5 -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
+            <artifactId>junit-jupiter</artifactId>
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
@@ -144,7 +122,7 @@
                                     <version>${maven.minimum.version}</version>
                                 </requireMavenVersion>
                                 <requireJavaVersion>
-                                    <version>${maven.compiler.source}</version>
+                                    <version>${maven.compiler.release}</version>
                                 </requireJavaVersion>
                             </rules>
                         </configuration>
@@ -158,8 +136,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven.compiler.plugin.version}</version>
                 <configuration>
-                    <source>${maven.compiler.source}</source>
-                    <target>${maven.compiler.target}</target>
+                    <release>${maven.compiler.release}</release>
+                    
                 </configuration>
             </plugin>
 
@@ -172,12 +150,15 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>versions-maven-plugin</artifactId>
-                <version>${versions.plugin.version}</version>
+                <version>${versions.maven.plugin.version}</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven.surefire.plugin.version}</version>
+                <configuration>
+                    <useModulePath>false</useModulePath>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -219,7 +200,7 @@
                     <plugin>
                         <groupId>com.github.spotbugs</groupId>
                         <artifactId>spotbugs-maven-plugin</artifactId>
-                        <version>${spotbugs.plugin.version}</version>
+                        <version>${spotbugs.maven.plugin.version}</version>
                         <configuration>
                             <excludeFilterFile>config/spotbugs/exclude.xml</excludeFilterFile>
                         </configuration>

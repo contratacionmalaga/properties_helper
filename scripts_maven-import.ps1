@@ -8,10 +8,10 @@ param(
 
 $outputFile = Join-Path $BasePath "comandos_mvn.txt"
 $libs = @(
-    @{ file = "email_helper-3.2.0.jar"; groupId = "local.jarios"; artifactId = "email-helper"; version = "3.2.0" },
-    @{ file = "properties_helper-4.2.0.jar"; groupId = "local.jarios"; artifactId = "properties-helper"; version = "4.2.0" },
-    @{ file = "version_helper-2.2.0.jar"; groupId = "local.jarios"; artifactId = "version-helper"; version = "2.2.0" },
-    @{ file = "encrypt_helper-2.1.0.jar"; groupId = "local.jarios"; artifactId = "encrypt-helper"; version = "2.1.0" }
+    @{ file = "email-helper-3.2.0.jar"; groupId = "local.jarios"; artifactId = "email-helper"; version = "3.2.0" },
+    @{ file = "properties-helper-4.2.0.jar"; groupId = "local.jarios"; artifactId = "properties-helper"; version = "4.2.0" },
+    @{ file = "version-helper-2.2.0.jar"; groupId = "local.jarios"; artifactId = "version-helper"; version = "2.2.0" },
+    @{ file = "encrypt-helper-2.1.0.jar"; groupId = "local.jarios"; artifactId = "encrypt-helper"; version = "2.1.0" }
 )
 
 $validPattern = '^[a-zA-Z0-9._-]+$'
