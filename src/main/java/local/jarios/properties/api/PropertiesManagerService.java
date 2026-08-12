@@ -74,9 +74,14 @@ public interface PropertiesManagerService {
   /**
    * Devuelve una copia defensiva de las propiedades de un fichero específico.
    *
+   * <p>Si el fichero no ha sido cargado todavía, devuelve una instancia vacía de
+   * {@link Properties}. Este comportamiento se mantiene por compatibilidad y forma parte del
+   * contrato público de la API.</p>
+   *
    * @param fileNameWithoutExtension Nombre del fichero sin extensión.
-   * @return Copia de las propiedades del fichero.
-   * @throws PropertiesManagerException si el fichero no está disponible o el nombre es inválido.
+   * @return Copia de las propiedades del fichero, o una instancia vacía si el fichero no está
+   *     cargado.
+   * @throws PropertiesManagerException si el nombre es inválido.
    */
   Properties getProperties(String fileNameWithoutExtension) throws PropertiesManagerException;
 
@@ -184,3 +189,5 @@ public interface PropertiesManagerService {
    */
   void addProperties(String fileName, Properties properties) throws PropertiesManagerException;
 }
+
+

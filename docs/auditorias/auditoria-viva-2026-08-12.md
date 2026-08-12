@@ -4,7 +4,7 @@ Fecha de creacion: 2026-08-12
 Ultima actualizacion: 2026-08-12  
 Repositorio local: `C:\java\desarrollo\properties-helper`  
 Version revisada: `6.0.0`  
-Estado global: **riesgo bajo-controlado, con decisiones pendientes de versionado mayor**
+Estado global: **riesgo bajo-controlado, apto para nueva release sobre Java 21 y Maven 3**
 
 ## Como mantener viva esta auditoria
 
@@ -34,7 +34,7 @@ ejecuta SpotBugs, Checkstyle y JaCoCo, y se han corregido problemas importantes
 del contrato publico como copias defensivas, normalizacion de nombres,
 fallback a entorno/sistema y claves sensibles por defecto.
 
-La principal debilidad actual ya no es de bloqueo funcional, sino de mantenibilidad y gobierno tecnico: quedan decisiones pendientes sobre la semantica de `getProperties` para ficheros no cargados, la estrategia de migracion a Java 25 LTS y el uso futuro de Maven 4 en una fase separada.
+La principal debilidad actual ya no es de bloqueo funcional. La base de release queda fijada en Java 21 y Maven 3, con el contrato de `getProperties` mantenido por compatibilidad. Los siguientes cambios mayores quedan fuera de esta release y deberán evaluarse en fases separadas.
 
 ## Verificaciones ejecutadas
 
@@ -138,23 +138,19 @@ Fuente:
 ### AV-005 - Java 21 sigue soportado, pero ya no es el LTS mas reciente
 
 Severidad: baja-media  
-Estado: Pendiente de decision  
-Ubicacion: `pom.xml`
+Estado: Aceptado  
+Ubicacion: `pom.xml`, `.github/workflows/maven-ci.yml`, `.github/workflows/release-package.yml`
 
 Evidencia:
 
-- El proyecto compila con Java 21.
-- Oracle lista JDK 26 como ultima version de la plataforma Java SE.
-- Oracle lista JDK 25 como ultimo LTS y Java 21 como LTS anterior.
-- Oracle indica `21.0.12` como version actual de la linea Java 21; localmente se
-  usa `21.0.9`.
+- El proyecto compila y publica correctamente con Java 21.
+- `pom.xml` fija `maven.compiler.source` y `maven.compiler.target` en `21`.
+- El CI principal usa JDK 21.
+- La decision de producto para esta release es mantener compatibilidad con el resto de proyectos sobre Java 21.
 
 Recomendacion:
 
-No migrar automaticamente el `maven.compiler.source` a 25/26 si la libreria
-busca compatibilidad amplia. Si se mantiene Java 21, actualizar el JDK local/CI
-a la ultima patch disponible de Java 21. Abrir una decision tecnica para evaluar
-Java 25 LTS en una version mayor futura.
+Mantener Java 21 como baseline oficial de la libreria hasta que exista una fase separada de migracion para todo el ecosistema.
 
 Fuentes:
 
@@ -204,24 +200,22 @@ Mantener `getInstance()` como API compatible y documentar `newInstance()` como o
 ### AV-008 - `getProperties` devuelve propiedades vacias para fichero no cargado
 
 Severidad: baja-media  
-Estado: Pendiente de decision  
-Ubicacion: `PropertiesManagerServiceImpl#getProperties`
+Estado: Aceptado  
+Ubicacion: `PropertiesManagerService#getProperties`, `PropertiesManagerServiceImpl#getProperties`
 
 Evidencia:
 
 - `getProperties` usa `getOrDefault(..., new Properties())`.
-- Otros metodos como `exportPropertiesToJson` lanzan excepcion si el fichero no
-  esta cargado.
+- La decision para esta release es mantener el retorno vacio por compatibilidad.
+- El contrato queda documentado en la API para evitar ambiguedad en proyectos consumidores.
 
 Impacto:
 
-La semantica es inconsistente: consultar propiedades de un fichero inexistente
-parece correcto aunque no lo sea.
+Se evita una ruptura de compatibilidad en una libreria ya integrada por otros proyectos.
 
 Recomendacion:
 
-Decidir contrato: devolver vacio de forma explicita y documentada, o lanzar
-`PropertiesManagerException` para alinearlo con el resto de metodos.
+Mantener este comportamiento mientras la API siga priorizando compatibilidad retroactiva. Si en el futuro se quiere lanzar excepcion, hacerlo solo en una version mayor.
 
 ### AV-009 - Publicacion sin Javadoc JAR
 
@@ -322,10 +316,10 @@ Orden propuesto:
 | Hito | Objetivo | Estado | Criterio de cierre | Ultima evidencia |
 | --- | --- | --- | --- | --- |
 | H1 | Actualizaciones menores y wrapper | Cerrado | Builds verdes tras subir versiones estables | `clean verify` y `-Pquality verify` OK 2026-08-12 |
-| H2 | Decisiones de majors/pre-releases | Cerrado parcial | JUnit 6 validado; Maven 4, AssertJ milestone, SLF4J alpha y Surefire milestone quedan no aplicados | Informes Maven 2026-08-12 |
+| H2 | Decisiones de majors/pre-releases | Cerrado | JUnit 6 validado; Java 21 y Maven 3 fijados; Maven 4 y pre-releases descartados para esta release | Informes Maven y decision funcional 2026-08-12 |
 | H3 | Checkstyle como puerta real | Cerrado | 0 warnings relevantes | `-Pquality verify` OK sin warnings 2026-08-12 |
 | H4 | Cobertura minima | Cerrado | JaCoCo `check` con umbral inicial | Umbral 70% cumplido 2026-08-12 |
-| H5 | API singleton y semantica de fichero ausente | Cerrado parcial | `newInstance()` implementado; queda decidir `getProperties` para fichero ausente | `-Pquality verify` OK con 14 tests 2026-08-12 |
+| H5 | API singleton y semantica de fichero ausente | Cerrado | `newInstance()` implementado; `getProperties` mantiene retorno vacio documentado por compatibilidad | `-Pquality verify` OK con 14 tests y contrato documentado 2026-08-12 |
 | H6 | Publicacion y mantenimiento | Cerrado | Javadoc/release/Dependabot GitHub Actions definidos | Javadoc JAR, release upload, Dependabot Actions y workflow OWASP separado configurados 2026-08-12 |
 
 ## Checklist operativo
@@ -337,12 +331,12 @@ Orden propuesto:
 - [x] Decidir si Logback debe ser runtime o test.
 - [x] Evaluar Logback 1.6.2.
 - [x] Evaluar JUnit 6.1.3 en rama separada.
-- [ ] Mantener Java 21 o planificar Java 25 LTS.
-- [ ] Actualizar JDK local/CI a ultima patch de Java 21 si se mantiene Java 21.
+- [x] Mantener Java 21 como baseline oficial de esta release.
+- [ ] Actualizar JDK local/CI a la ultima patch de Java 21 cuando el entorno corporativo lo permita.
 - [x] Corregir warnings de Checkstyle.
 - [x] Decidir si Checkstyle debe fallar CI.
 - [x] Anadir umbral JaCoCo.
-- [ ] Decidir comportamiento de `getProperties` ante fichero no cargado.
+- [x] Mantener `getProperties` devolviendo vacio y documentarlo como contrato compatible.
 - [x] Evaluar alternativa al singleton para instancias aisladas.
 - [x] Configurar Javadoc JAR si la libreria se publica.
 - [x] Anadir Dependabot para GitHub Actions.
@@ -376,9 +370,8 @@ Get-Content .mvn/wrapper/maven-wrapper.properties
 | 2026-08-12 | H3 cerrado: Checkstyle/Javadoc sin warnings | Cerrado | `-Pquality verify` OK sin warnings |
 | 2026-08-12 | H4 cerrado: JaCoCo check al 70% | Cerrado | `jacoco:check` cumplido |
 | 2026-08-12 | H6 cerrado: Javadoc JAR, release upload y Dependabot GitHub Actions | Cerrado | `maven-javadoc-plugin`, release workflow y `.github/dependabot.yml` actualizados |
-| 2026-08-12 | H2 cerrado parcial: JUnit 6.1.3 y Surefire 3.5.5 aplicados y validados | Cerrado parcial | `-Pquality verify`, `dependency:tree`, `versions:*` OK |
-| 2026-08-12 | H5 cerrado parcial: instancia aislada sin romper singleton | Cerrado parcial | `newInstance()` y test dedicado; `-Pquality verify` OK con 14 tests |
+| 2026-08-12 | H2 cerrado: JUnit 6.1.3 validado; Java 21 y Maven 3 fijados para release | Cerrado | `-Pquality verify`, `dependency:tree`, `versions:*` OK y decision funcional cerrada |
+| 2026-08-12 | H5 cerrado: instancia aislada sin romper singleton y contrato de `getProperties` fijado | Cerrado | `newInstance()`, test dedicado y Javadoc actualizado |
 | 2026-08-12 | CI corregido: workflow principal estable y OWASP separado | Cerrado | `.github/workflows/maven-ci.yml` usa `actions/checkout@v5`, `actions/setup-java@v5`; OWASP queda en `.github/workflows/owasp-dependency-check.yml` con `NVD_API_KEY` |
-
-
+| 2026-08-12 | Baseline de release fijado en Java 21 y Maven 3 | Cerrado | pom.xml, CI y auditoria viva alineados |
 

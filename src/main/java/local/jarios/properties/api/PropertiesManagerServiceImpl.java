@@ -59,6 +59,9 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
   /**
    * Crea una instancia aislada del servicio sin compartir estado con el singleton.
    *
+   * <p>Se recomienda para tests y para consumidores que necesiten aislamiento de estado explícito.
+   * El singleton {@link #getInstance()} se mantiene por compatibilidad.</p>
+   *
    * @return nueva instancia de {@link PropertiesManagerService}
    */
   public static PropertiesManagerService newInstance() {
@@ -377,3 +380,5 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
     }
   }
 }
+
+
