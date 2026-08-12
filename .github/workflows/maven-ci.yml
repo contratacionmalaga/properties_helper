@@ -3,7 +3,7 @@ name: Java CI with Maven
 on:
   push:
     branches:
-      - main    # O la rama que uses por defecto
+      - main
   pull_request:
 
 jobs:
@@ -25,6 +25,3 @@ jobs:
 
       - name: Quality checks
         run: mvn -Pquality verify
-
-      - name: Run OWASP Dependency Check
-        run: mvn -B -ntp org.owasp:dependency-check-maven:check

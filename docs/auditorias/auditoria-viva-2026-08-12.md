@@ -34,11 +34,7 @@ ejecuta SpotBugs, Checkstyle y JaCoCo, y se han corregido problemas importantes
 del contrato publico como copias defensivas, normalizacion de nombres,
 fallback a entorno/sistema y claves sensibles por defecto.
 
-La principal debilidad actual ya no es de bloqueo funcional, sino de
-mantenibilidad: hay avisos de Checkstyle que no fallan el build, actualizaciones
-disponibles de dependencias y plugins, cobertura sin umbral minimo, ausencia de
-Javadoc/release formal en el build publicado y algunos artefactos auxiliares que
-siguen oliendo a proyecto local o demo.
+La principal debilidad actual ya no es de bloqueo funcional, sino de mantenibilidad y gobierno tecnico: quedan decisiones pendientes sobre la semantica de `getProperties` para ficheros no cargados, la estrategia de migracion a Java 25 LTS y el uso futuro de Maven 4 en una fase separada.
 
 ## Verificaciones ejecutadas
 
@@ -279,6 +275,27 @@ El consumidor ya no recibe Logback impuesto por la libreria.
 Recomendacion:
 
 Mantener Logback fuera del classpath runtime de consumidores.
+
+### AV-012 - OWASP no debe bloquear el CI principal del paquete sin secreto NVD
+
+Severidad: baja-media  
+Estado: Cerrado  
+Ubicacion: `.github/workflows/maven-ci.yml`, `.github/workflows/owasp-dependency-check.yml`
+
+Evidencia:
+
+- El CI principal queda limitado a `clean verify` y `-Pquality verify`.
+- El escaneo OWASP se mueve a un workflow separado, ejecutable manualmente y por programacion semanal.
+- El workflow dedicado usa `secrets.NVD_API_KEY`, que es donde debe resolverse la dependencia externa.
+
+Impacto:
+
+La calidad bloqueante del paquete no depende de credenciales externas, pero el repositorio conserva una via profesional para escaneo de vulnerabilidades.
+
+Recomendacion:
+
+Mantener OWASP en workflow separado y activar alertas segun la politica de seguridad del repositorio.
+
 ## Actualizaciones recomendadas
 
 Orden propuesto:
@@ -309,7 +326,7 @@ Orden propuesto:
 | H3 | Checkstyle como puerta real | Cerrado | 0 warnings relevantes | `-Pquality verify` OK sin warnings 2026-08-12 |
 | H4 | Cobertura minima | Cerrado | JaCoCo `check` con umbral inicial | Umbral 70% cumplido 2026-08-12 |
 | H5 | API singleton y semantica de fichero ausente | Cerrado parcial | `newInstance()` implementado; queda decidir `getProperties` para fichero ausente | `-Pquality verify` OK con 14 tests 2026-08-12 |
-| H6 | Publicacion y mantenimiento | Cerrado | Javadoc/release/Dependabot GitHub Actions definidos | Javadoc JAR, release upload y Dependabot Actions configurados 2026-08-12 |
+| H6 | Publicacion y mantenimiento | Cerrado | Javadoc/release/Dependabot GitHub Actions definidos | Javadoc JAR, release upload, Dependabot Actions y workflow OWASP separado configurados 2026-08-12 |
 
 ## Checklist operativo
 
@@ -361,4 +378,7 @@ Get-Content .mvn/wrapper/maven-wrapper.properties
 | 2026-08-12 | H6 cerrado: Javadoc JAR, release upload y Dependabot GitHub Actions | Cerrado | `maven-javadoc-plugin`, release workflow y `.github/dependabot.yml` actualizados |
 | 2026-08-12 | H2 cerrado parcial: JUnit 6.1.3 y Surefire 3.5.5 aplicados y validados | Cerrado parcial | `-Pquality verify`, `dependency:tree`, `versions:*` OK |
 | 2026-08-12 | H5 cerrado parcial: instancia aislada sin romper singleton | Cerrado parcial | `newInstance()` y test dedicado; `-Pquality verify` OK con 14 tests |
-| 2026-08-12 | CI corregido: escaneo OWASP via Maven y acciones v5 | Cerrado | `.github/workflows/maven-ci.yml` usa `actions/checkout@v5`, `actions/setup-java@v5` y `dependency-check-maven:check` |
+| 2026-08-12 | CI corregido: workflow principal estable y OWASP separado | Cerrado | `.github/workflows/maven-ci.yml` usa `actions/checkout@v5`, `actions/setup-java@v5`; OWASP queda en `.github/workflows/owasp-dependency-check.yml` con `NVD_API_KEY` |
+
+
+
