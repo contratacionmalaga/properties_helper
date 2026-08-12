@@ -361,3 +361,4 @@ Get-Content .mvn/wrapper/maven-wrapper.properties
 | 2026-08-12 | H6 cerrado: Javadoc JAR, release upload y Dependabot GitHub Actions | Cerrado | `maven-javadoc-plugin`, release workflow y `.github/dependabot.yml` actualizados |
 | 2026-08-12 | H2 cerrado parcial: JUnit 6.1.3 y Surefire 3.5.5 aplicados y validados | Cerrado parcial | `-Pquality verify`, `dependency:tree`, `versions:*` OK |
 | 2026-08-12 | H5 cerrado parcial: instancia aislada sin romper singleton | Cerrado parcial | `newInstance()` y test dedicado; `-Pquality verify` OK con 14 tests |
+| 2026-08-12 | CI corregido: accion OWASP Dependency Check valida | Cerrado | `.github/workflows/maven-ci.yml` actualiza la accion a `dependency-check/Dependency-Check_Action@1.1.0` |

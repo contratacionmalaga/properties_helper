@@ -27,7 +27,7 @@ jobs:
         run: mvn -Pquality verify
 
       - name: Run OWASP Dependency Check
-        uses: dependency-check/owasp-dependency-check-action@v2
+        uses: dependency-check/Dependency-Check_Action@1.1.0
         with:
           project: 'properties-helper'
           scanPath: '.'
