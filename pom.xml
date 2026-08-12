@@ -5,11 +5,11 @@
     <parent>
         <groupId>local.jarios</groupId>
         <artifactId>jarios-parent</artifactId>
-        <version>1.0.1</version>
+        <version>1.0.2</version>
         <relativePath>../jarios-parent/pom.xml</relativePath>
     </parent>
     <artifactId>properties-helper</artifactId>
-    <version>6.0.1</version>
+    <version>6.0.2</version>
     <packaging>jar</packaging>
 
     <name>properties-helper</name>
@@ -283,3 +283,4 @@
         </profile>
     </profiles>
 </project>
+
