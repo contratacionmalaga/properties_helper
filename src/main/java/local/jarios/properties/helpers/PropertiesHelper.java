@@ -2,14 +2,10 @@ package local.jarios.properties.helpers;
 
 import java.util.Properties;
 
-/**
- * Ayudante de los ficheros properties.
- */
+/** Ayudante de los ficheros properties. */
 public final class PropertiesHelper {
 
-  /**
-   * Constructro privado de la clase -- Evita es instanciamiento.
-   */
+  /** Constructro privado de la clase -- Evita es instanciamiento. */
   private PropertiesHelper() {
 
     // Constructor vacío

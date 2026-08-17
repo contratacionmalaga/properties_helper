@@ -6,7 +6,7 @@ import java.util.Set;
  * Clase que contiene constantes generales utilizadas a lo largo de la aplicación.
  *
  * <p>Contiene cadenas comunes, formatos de fecha y caracteres de control, para evitar el uso de
- * valores mágicos en el código.</p>
+ * valores mágicos en el código.
  *
  * @author Juan Antonio
  * @version 2.0
@@ -14,34 +14,22 @@ import java.util.Set;
  */
 public final class Constantes {
 
-  /**
-   * Ruta del directorio con los ficheros properties.
-   */
+  /** Ruta del directorio con los ficheros properties. */
   public static final String PROPERTIES_DIR = "properties";
 
-  /**
-   * Nombre sin extensión del fichero app.properties.
-   */
+  /** Nombre sin extensión del fichero app.properties. */
   public static final String APP_PROPERTIES = "app";
 
-  /**
-   * Nombre sin extensión del fichero app.properties.
-   */
+  /** Nombre sin extensión del fichero app.properties. */
   public static final String APP_NON_EXISTS_PROPERTIES = "non.exists.file";
 
-  /**
-   * Nombre sin extensión del fichero app.properties.
-   */
+  /** Nombre sin extensión del fichero app.properties. */
   public static final String KEY_APP_NAME = "app.name";
 
-  /**
-   * Nombre sin extensión del fichero app.properties.
-   */
+  /** Nombre sin extensión del fichero app.properties. */
   public static final String KEY_NON_EXISTS = "non.exists.key";
 
-  /**
-   * Nombre sin extensión del fichero email.properties.
-   */
+  /** Nombre sin extensión del fichero email.properties. */
   public static final String EMAIL_PROPERTIES = "email";
 
   /**
@@ -56,21 +44,11 @@ public final class Constantes {
    */
   public static final String PROPERTIES_EXT = ".properties";
 
-  /**
-   * Claves sensibles que se ocultan por defecto en logs y exportaciones.
-   */
-  public static final Set<String> DEFAULT_SENSITIVE_KEYS = Set.of(
-      "password",
-      "secret",
-      "token",
-      "apikey",
-      "api_key",
-      "credential"
-  );
+  /** Claves sensibles que se ocultan por defecto en logs y exportaciones. */
+  public static final Set<String> DEFAULT_SENSITIVE_KEYS =
+      Set.of("password", "secret", "token", "apikey", "api_key", "credential");
 
-  /**
-   * Constructor privado para evitar instanciación.
-   */
+  /** Constructor privado para evitar instanciación. */
   private Constantes() {
     // No instanciable
   }

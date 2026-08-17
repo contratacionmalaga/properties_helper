@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Utilidades de ayuda para trabajar con {@link File}.
  *
- * <p>Proporciona métodos para validar ficheros y directorios.</p>
+ * <p>Proporciona métodos para validar ficheros y directorios.
  *
  * @author Juan Antonio
  * @version 2.1
@@ -21,7 +21,8 @@ public final class FileHelper {
 
   /**
    * Verifica si un fichero es inválido.
-   * <p>Un fichero es inválido si es null, no existe, no es un fichero o no se puede leer.</p>
+   *
+   * <p>Un fichero es inválido si es null, no existe, no es un fichero o no se puede leer.
    *
    * @param file Fichero a verificar
    * @return {@code true} si el fichero es inválido, {@code false} si es válido
@@ -52,7 +53,8 @@ public final class FileHelper {
 
   /**
    * Verifica si un directorio es inválido.
-   * <p>Un directorio es inválido si es null, no existe, no es un directorio o no se puede leer.</p>
+   *
+   * <p>Un directorio es inválido si es null, no existe, no es un directorio o no se puede leer.
    *
    * @param directory Directorio a verificar
    * @return {@code true} si el directorio es inválido, {@code false} si es válido

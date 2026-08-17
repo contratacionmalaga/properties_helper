@@ -9,13 +9,14 @@ import local.jarios.properties.exception.PropertiesManagerException;
 /**
  * Interfaz que define las operaciones para la gestión centralizada de ficheros .properties. Esta
  * API permite:
+ *
  * <ul>
- *   <li>Carga de múltiples ficheros .properties desde una carpeta externa.</li>
- *   <li>Acceso mediante copias defensivas para evitar modificaciones accidentales.</li>
- *   <li>Ocultamiento de claves sensibles en operaciones de impresión y exportación.</li>
- *   <li>Exportación de propiedades a formato JSON.</li>
- *   <li>Validación de la presencia de claves requeridas en un fichero.</li>
- *   <li>Recarga segura y sincronizada de todas las propiedades cargadas.</li>
+ *   <li>Carga de múltiples ficheros .properties desde una carpeta externa.
+ *   <li>Acceso mediante copias defensivas para evitar modificaciones accidentales.
+ *   <li>Ocultamiento de claves sensibles en operaciones de impresión y exportación.
+ *   <li>Exportación de propiedades a formato JSON.
+ *   <li>Validación de la presencia de claves requeridas en un fichero.
+ *   <li>Recarga segura y sincronizada de todas las propiedades cargadas.
  * </ul>
  *
  * @author Juan Antonio
@@ -35,7 +36,7 @@ public interface PropertiesManagerService {
    * Establece las claves sensibles que deben ocultarse durante la impresión y exportación.
    *
    * @param keys Conjunto de claves sensibles. Si es {@code null} o vacío, se usarán las claves por
-   *             defecto.
+   *     defecto.
    * @throws PropertiesManagerException si ocurre un error al establecer las claves.
    */
   void setSensitiveKeys(Set<String> keys) throws PropertiesManagerException;
@@ -74,9 +75,9 @@ public interface PropertiesManagerService {
   /**
    * Devuelve una copia defensiva de las propiedades de un fichero específico.
    *
-   * <p>Si el fichero no ha sido cargado todavía, devuelve una instancia vacía de
-   * {@link Properties}. Este comportamiento se mantiene por compatibilidad y forma parte del
-   * contrato público de la API.</p>
+   * <p>Si el fichero no ha sido cargado todavía, devuelve una instancia vacía de {@link
+   * Properties}. Este comportamiento se mantiene por compatibilidad y forma parte del contrato
+   * público de la API.
    *
    * @param fileNameWithoutExtension Nombre del fichero sin extensión.
    * @return Copia de las propiedades del fichero, o una instancia vacía si el fichero no está
@@ -90,7 +91,7 @@ public interface PropertiesManagerService {
    *
    * @param fileName nombre del archivo lógico
    * @param property propiedad donde se almacenará
-   * @param valor    que se almacenará
+   * @param valor que se almacenará
    * @throws PropertiesManagerException si hay errores de validación
    */
   void setProperty(String fileName, String property, String valor)
@@ -109,10 +110,10 @@ public interface PropertiesManagerService {
    * sistema.
    *
    * @param fileNameWithoutExtension Nombre del fichero sin extensión.
-   * @param key                      Clave a buscar.
+   * @param key Clave a buscar.
    * @return Valor encontrado.
    * @throws PropertiesManagerException si el nombre del fichero o la clave son inválidos, o si la
-   *                                    clave no existe.
+   *     clave no existe.
    */
   String getProperty(String fileNameWithoutExtension, String key) throws PropertiesManagerException;
 
@@ -128,7 +129,7 @@ public interface PropertiesManagerService {
    * Exporta las propiedades de un fichero específico en formato JSON.
    *
    * @param fileNameWithoutExtension Nombre del fichero sin extensión.
-   * @param maskSensitiveValues      Si {@code true}, se ocultan valores sensibles.
+   * @param maskSensitiveValues Si {@code true}, se ocultan valores sensibles.
    * @return Cadena JSON con las propiedades.
    * @throws PropertiesManagerException si ocurre un error al procesar o exportar las propiedades.
    */
@@ -148,7 +149,7 @@ public interface PropertiesManagerService {
    * Verifica si un fichero contiene todas las claves requeridas.
    *
    * @param fileNameWithoutExtension Nombre del fichero sin extensión.
-   * @param requiredKeys             Conjunto de claves que deben existir.
+   * @param requiredKeys Conjunto de claves que deben existir.
    * @return {@code true} si todas las claves están presentes; {@code false} en caso contrario.
    * @throws PropertiesManagerException si el fichero es inválido o no se puede acceder.
    */
@@ -182,12 +183,10 @@ public interface PropertiesManagerService {
   /**
    * Añade o reemplaza un conjunto de propiedades en memoria para un fichero específico.
    *
-   * @param fileName   Nombre del fichero sin extensión.
+   * @param fileName Nombre del fichero sin extensión.
    * @param properties Propiedades a almacenar.
    * @throws PropertiesManagerException si los parámetros son inválidos o ocurre un error de
-   *                                    almacenamiento.
+   *     almacenamiento.
    */
   void addProperties(String fileName, Properties properties) throws PropertiesManagerException;
 }
-
-

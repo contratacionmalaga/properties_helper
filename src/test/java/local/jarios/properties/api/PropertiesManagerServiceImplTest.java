@@ -20,8 +20,7 @@ class PropertiesManagerServiceImplTest {
 
   private final PropertiesManagerService manager = PropertiesManagerServiceImpl.getInstance();
 
-  @TempDir
-  Path tempDir;
+  @TempDir Path tempDir;
 
   @BeforeEach
   void setUp() throws IOException {
@@ -190,6 +189,7 @@ class PropertiesManagerServiceImplTest {
     assertThat(isolated.hasLoaded("isolated")).isTrue();
     assertThat(manager.hasLoaded("isolated")).isFalse();
   }
+
   private void writeProperties(String fileName, String content) throws IOException {
     Files.writeString(tempDir.resolve(fileName), content);
   }

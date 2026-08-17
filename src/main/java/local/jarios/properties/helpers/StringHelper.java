@@ -7,9 +7,7 @@ package local.jarios.properties.helpers;
  */
 public final class StringHelper {
 
-  /**
-   * Constructro privado de la clase -- Evita es instanciamiento.
-   */
+  /** Constructro privado de la clase -- Evita es instanciamiento. */
   private StringHelper() {
 
     // Constructor vacío

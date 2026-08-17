@@ -26,10 +26,9 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Implementación singleton del servicio {@link PropertiesManagerService}.
- * <p>
- * Permite cargar, obtener, modificar y exportar archivos de propiedades desde un
- * directorio configurable, con soporte de claves sensibles y exportación a JSON.
- * </p>
+ *
+ * <p>Permite cargar, obtener, modificar y exportar archivos de propiedades desde un directorio
+ * configurable, con soporte de claves sensibles y exportación a JSON.
  *
  * @author Juan Antonio
  * @version 2.1
@@ -60,7 +59,7 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
    * Crea una instancia aislada del servicio sin compartir estado con el singleton.
    *
    * <p>Se recomienda para tests y para consumidores que necesiten aislamiento de estado explícito.
-   * El singleton {@link #getInstance()} se mantiene por compatibilidad.</p>
+   * El singleton {@link #getInstance()} se mantiene por compatibilidad.
    *
    * @return nueva instancia de {@link PropertiesManagerService}
    */
@@ -75,9 +74,8 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
 
   @Override
   public void setConfigDir(String configDir) {
-    this.configDir = (configDir == null || configDir.isBlank())
-        ? Constantes.PROPERTIES_DIR
-        : configDir.trim();
+    this.configDir =
+        (configDir == null || configDir.isBlank()) ? Constantes.PROPERTIES_DIR : configDir.trim();
     log.debug("Directorio de configuración actualizado a '{}'", this.configDir);
   }
 
@@ -88,9 +86,8 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
 
   @Override
   public synchronized void setSensitiveKeys(Set<String> keys) {
-    this.sensitiveKeys = (keys == null || keys.isEmpty())
-        ? Constantes.DEFAULT_SENSITIVE_KEYS
-        : Set.copyOf(keys);
+    this.sensitiveKeys =
+        (keys == null || keys.isEmpty()) ? Constantes.DEFAULT_SENSITIVE_KEYS : Set.copyOf(keys);
     log.debug("Claves sensibles definidas: {}", this.sensitiveKeys);
   }
 
@@ -131,13 +128,14 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
     Properties previous = newMap.put(normalizedFileName, copyProperties(props));
     propertiesMap = Collections.unmodifiableMap(newMap);
 
-    log.debug(previous == null
-                 ? "Archivo '{}' añadido con {} propiedades"
-                 : "Archivo '{}' reemplazado: antes {} propiedades, ahora {}",
-             normalizedFileName,
-             props.size(),
-             previous == null ? 0 : previous.size(),
-             props.size());
+    log.debug(
+        previous == null
+            ? "Archivo '{}' añadido con {} propiedades"
+            : "Archivo '{}' reemplazado: antes {} propiedades, ahora {}",
+        normalizedFileName,
+        props.size(),
+        previous == null ? 0 : previous.size(),
+        props.size());
   }
 
   @Override
@@ -160,8 +158,11 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
     newMap.put(normalizedFileName, props);
     propertiesMap = Collections.unmodifiableMap(newMap);
 
-    log.debug("Propiedad '{}' de '{}' actualizada a '{}'",
-        property, normalizedFileName, maskIfSensitive(property, value));
+    log.debug(
+        "Propiedad '{}' de '{}' actualizada a '{}'",
+        property,
+        normalizedFileName,
+        maskIfSensitive(property, value));
   }
 
   @Override
@@ -180,10 +181,11 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
   @Override
   public void printAllProperties() throws PropertiesManagerException {
     validateMap(propertiesMap);
-    propertiesMap.forEach((k, props) -> {
-      log.debug("Propiedades de '{}':", k);
-      printPropertiesInternal(props);
-    });
+    propertiesMap.forEach(
+        (k, props) -> {
+          log.debug("Propiedades de '{}':", k);
+          printPropertiesInternal(props);
+        });
   }
 
   @Override
@@ -305,9 +307,7 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
       return false;
     }
     String lower = key.toLowerCase(Locale.ROOT);
-    return sensitiveKeys.stream()
-        .map(s -> s.toLowerCase(Locale.ROOT))
-        .anyMatch(lower::contains);
+    return sensitiveKeys.stream().map(s -> s.toLowerCase(Locale.ROOT)).anyMatch(lower::contains);
   }
 
   private String normalizeFileName(String filename) throws PropertiesManagerException {
@@ -356,12 +356,13 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
 
   private Map<String, String> maskSensitiveKeys(Properties props, boolean maskSensitive) {
     return props.entrySet().stream()
-        .collect(Collectors.toMap(
-            e -> e.getKey().toString(),
-            e -> maskSensitive && isSensitiveKey(e.getKey().toString())
-                ? Constantes.KEY_SENSITIVE_VALUE
-                : e.getValue().toString()
-        ));
+        .collect(
+            Collectors.toMap(
+                e -> e.getKey().toString(),
+                e ->
+                    maskSensitive && isSensitiveKey(e.getKey().toString())
+                        ? Constantes.KEY_SENSITIVE_VALUE
+                        : e.getValue().toString()));
   }
 
   private Properties copyProperties(Properties source) {
@@ -380,5 +381,3 @@ public class PropertiesManagerServiceImpl implements PropertiesManagerService {
     }
   }
 }
-
-

@@ -5,7 +5,7 @@ package local.jarios.properties.common.util;
  * trazabilidad.
  *
  * <p>Facilita la gestión centralizada de textos comunes para logs, evitando duplicación y
- * facilitando modificaciones.</p>
+ * facilitando modificaciones.
  *
  * @author Juan Antonio
  * @version 2.0
@@ -25,9 +25,7 @@ public final class Mensajes {
   /** Mensaje que indica que la ejecución ha finalizado con errores. */
   public static final String FINAL_ERROR = "!!!! La ejecución ha finalizado con ERRORES !!!!";
 
-  /**
-   * Constructor privado para evitar la instanciación de esta clase de utilidades.
-   */
+  /** Constructor privado para evitar la instanciación de esta clase de utilidades. */
   private Mensajes() {
     // Constructor privado
   }

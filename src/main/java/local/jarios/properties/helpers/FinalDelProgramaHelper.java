@@ -5,9 +5,8 @@ import local.jarios.properties.enums.TipoFinalEjecucion;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Clase utilitaria para finalizar la ejecución del programa
- * registrando el resultado final mediante logs y terminando el proceso
- * con el código adecuado.
+ * Clase utilitaria para finalizar la ejecución del programa registrando el resultado final mediante
+ * logs y terminando el proceso con el código adecuado.
  */
 @Slf4j
 public final class FinalDelProgramaHelper {

@@ -9,9 +9,7 @@ import java.util.Map;
  */
 public final class MapHelper {
 
-  /**
-   * Constructro privado de la clase -- Evita es instanciamiento.
-   */
+  /** Constructro privado de la clase -- Evita es instanciamiento. */
   private MapHelper() {
 
     // Constructor vacío

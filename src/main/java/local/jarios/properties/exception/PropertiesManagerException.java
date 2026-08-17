@@ -6,9 +6,10 @@ package local.jarios.properties.exception;
  *
  * <p>Esta excepción extiende de {@link RuntimeException} y se lanza cuando ocurre cualquier fallo
  * durante la lectura, validación o procesamiento de ficheros properties en la aplicación. Permite
- * encapsular el mensaje de error y la causa raíz para facilitar la depuración y trazabilidad.</p>
+ * encapsular el mensaje de error y la causa raíz para facilitar la depuración y trazabilidad.
  *
- * <p><b>Ejemplo de uso:</b></p>
+ * <p><b>Ejemplo de uso:</b>
+ *
  * <pre>
  *     throw new PropertiesLoadException("Error cargando archivo properties");
  * </pre>
@@ -33,7 +34,7 @@ public class PropertiesManagerException extends RuntimeException {
    * excepción).
    *
    * @param message mensaje que describe la causa de la excepción
-   * @param cause   excepción original que provocó esta excepción
+   * @param cause excepción original que provocó esta excepción
    */
   public PropertiesManagerException(String message, Throwable cause) {
     super(message, cause);
