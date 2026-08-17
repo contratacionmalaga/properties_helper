@@ -39,5 +39,8 @@ jobs:
         uses: ./.github/actions/setup-maven-private
         with:
           package-token: ${{ secrets.PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
+      - name: Make Maven Wrapper executable
+        run: chmod +x ./mvnw
+
       - name: Quality checks
         run: ./mvnw -B -ntp -Pquality verify
