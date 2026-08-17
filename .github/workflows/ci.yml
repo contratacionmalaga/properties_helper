@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up Java
+        uses: actions/setup-java@v5.7.0
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Cache Maven and Dependency Check data
+        uses: actions/cache@v6.1.0
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.m2/dependency-check-data
+          key: maven-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            maven-${{ runner.os }}-
+
+      - name: Set up private Maven packages
+        uses: ./.github/actions/setup-maven-private
+        with:
+          package-token: ${{ secrets.PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
+      - name: Build
+        run: ./mvnw -B -ntp clean verify

@@ -1,0 +1,51 @@
+name: Dependency Check
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '40 4 * * 1'
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  dependency-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up Java
+        uses: actions/setup-java@v5.7.0
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Cache Maven and Dependency Check data
+        uses: actions/cache@v6.1.0
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.m2/dependency-check-data
+          key: dependency-check-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            dependency-check-${{ runner.os }}-
+            maven-${{ runner.os }}-
+
+      - name: Set up private Maven packages
+        uses: ./.github/actions/setup-maven-private
+        with:
+          package-token: ${{ secrets.PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
+      - name: Run OWASP Dependency Check
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+        run: ./mvnw -B -ntp org.owasp:dependency-check-maven:check
+
+      - name: Upload Dependency Check report
+        if: always() && hashFiles('target/dependency-check-report.*') != ''
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: dependency-check-report
+          path: target/dependency-check-report.*
+          if-no-files-found: ignore

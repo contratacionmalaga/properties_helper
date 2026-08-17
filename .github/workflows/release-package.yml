@@ -63,40 +63,11 @@ jobs:
             maven-release-${{ runner.os }}-
             maven-${{ runner.os }}-
 
-      - name: Configure Maven private repositories
-        shell: bash
-        env:
-          MAVEN_PACKAGE_TOKEN: ${{ secrets.PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
-          MAVEN_PUBLISH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          mkdir -p "$HOME/.m2"
-          cat > "$HOME/.m2/settings.xml" <<EOF
-          <settings>
-            <servers>
-              <server><id>github</id><username>${GITHUB_ACTOR}</username><password>${MAVEN_PUBLISH_TOKEN}</password></server>
-              <server><id>github-releases</id><username>${GITHUB_ACTOR}</username><password>${MAVEN_PUBLISH_TOKEN}</password></server>
-              <server><id>github-snapshots</id><username>${GITHUB_ACTOR}</username><password>${MAVEN_PUBLISH_TOKEN}</password></server>
-              <server><id>github-jarios-parent</id><username>${GITHUB_ACTOR}</username><password>${MAVEN_PACKAGE_TOKEN}</password></server>
-              <server><id>github-email-helper</id><username>${GITHUB_ACTOR}</username><password>${MAVEN_PACKAGE_TOKEN}</password></server>
-              <server><id>github-properties-helper</id><username>${GITHUB_ACTOR}</username><password>${MAVEN_PACKAGE_TOKEN}</password></server>
-              <server><id>github-version-helper</id><username>${GITHUB_ACTOR}</username><password>${MAVEN_PACKAGE_TOKEN}</password></server>
-              <server><id>github-encrypt-helper</id><username>${GITHUB_ACTOR}</username><password>${MAVEN_PACKAGE_TOKEN}</password></server>
-            </servers>
-            <profiles>
-              <profile>
-                <id>github-private-packages</id>
-                <repositories>
-                  <repository><id>github-jarios-parent</id><url>https://maven.pkg.github.com/contratacionmalaga/jarios-parent</url></repository>
-                  <repository><id>github-email-helper</id><url>https://maven.pkg.github.com/contratacionmalaga/email_helper</url></repository>
-                  <repository><id>github-properties-helper</id><url>https://maven.pkg.github.com/contratacionmalaga/properties_helper</url></repository>
-                  <repository><id>github-version-helper</id><url>https://maven.pkg.github.com/contratacionmalaga/version_helper</url></repository>
-                  <repository><id>github-encrypt-helper</id><url>https://maven.pkg.github.com/contratacionmalaga/encrypt_helper</url></repository>
-                </repositories>
-              </profile>
-            </profiles>
-            <activeProfiles><activeProfile>github-private-packages</activeProfile></activeProfiles>
-          </settings>
-          EOF
+      - name: Set up private Maven packages
+        uses: ./.github/actions/setup-maven-private
+        with:
+          package-token: ${{ secrets.PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
+          publish-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Make Maven Wrapper executable
         run: chmod +x ./mvnw
@@ -104,7 +75,7 @@ jobs:
       - name: Verify release version
         shell: bash
         run: |
-          PROJECT_VERSION="$(sed -n '/<\/parent>/,/<packaging>/s:.*<version>\(.*\)</version>.*:\1:p' pom.xml | head -n 1)"
+          PROJECT_VERSION="$(sed -n '0,/<packaging>/s:.*<version>\(.*\)</version>.*:\1:p' pom.xml | tail -n 1)"
           if [[ -z "$PROJECT_VERSION" ]]; then
             echo "Could not resolve project version from pom.xml" >&2
             exit 1
@@ -134,4 +105,10 @@ jobs:
       - name: Upload release artifacts
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${{ steps.release.outputs.tag }}" target/*.jar --clobber
+        shell: bash
+        run: |
+          if compgen -G "target/*.jar" > /dev/null; then
+            gh release upload "${{ steps.release.outputs.tag }}" target/*.jar --clobber
+          else
+            echo "No JAR artifacts found to upload."
+          fi
