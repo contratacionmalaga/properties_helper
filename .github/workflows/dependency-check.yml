@@ -3,7 +3,7 @@ name: Dependency Check
 on:
   workflow_dispatch:
   schedule:
-    - cron: '40 4 * * 1'
+    - cron: '10 4 * * 1'
 
 permissions:
   contents: read
@@ -37,8 +37,12 @@ jobs:
         uses: ./.github/actions/setup-maven-private
         with:
           package-token: ${{ secrets.PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
+
       - name: Make Maven Wrapper executable
         run: chmod +x ./mvnw
+
+      - name: Set up project artifacts
+        uses: ./.github/actions/setup-project-artifacts
 
       - name: Run OWASP Dependency Check
         env:

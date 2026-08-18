@@ -1,0 +1,9 @@
+name: Setup project artifacts
+description: Prepare project-specific local artifacts.
+
+runs:
+  using: composite
+  steps:
+    - name: No project-specific artifacts
+      shell: bash
+      run: echo "No project-specific artifacts required."

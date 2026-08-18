@@ -72,6 +72,9 @@ jobs:
       - name: Make Maven Wrapper executable
         run: chmod +x ./mvnw
 
+      - name: Set up project artifacts
+        uses: ./.github/actions/setup-project-artifacts
+
       - name: Verify release version
         shell: bash
         run: |
@@ -99,8 +102,8 @@ jobs:
         run: |
           gh release view "${{ steps.release.outputs.tag }}" >/dev/null 2>&1 || \
           gh release create "${{ steps.release.outputs.tag }}" \
-            --title "properties-helper ${{ steps.release.outputs.version }}" \
-            --notes "Release properties-helper ${{ steps.release.outputs.version }}."
+            --title "${{ github.event.repository.name }} ${{ steps.release.outputs.version }}" \
+            --notes "Release ${{ github.event.repository.name }} ${{ steps.release.outputs.version }}."
 
       - name: Upload release artifacts
         env:

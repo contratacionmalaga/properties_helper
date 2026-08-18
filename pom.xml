@@ -4,11 +4,11 @@
   <parent>
     <groupId>local.jarios</groupId>
     <artifactId>jarios-parent</artifactId>
-    <version>1.0.12</version>
+    <version>1.0.13</version>
     <relativePath>../jarios-parent/pom.xml</relativePath>
   </parent>
   <artifactId>properties-helper</artifactId>
-  <version>6.0.4</version>
+  <version>6.0.5</version>
   <packaging>jar</packaging>
   <name>properties-helper</name>
   <description>Gestión avanzada de ficheros properties</description>
@@ -161,7 +161,6 @@
           <plugin>
             <groupId>com.github.spotbugs</groupId>
             <artifactId>spotbugs-maven-plugin</artifactId>
-            <version>${spotbugs.maven.plugin.version}</version>
             <configuration>
               <excludeFilterFile>config/spotbugs/exclude.xml</excludeFilterFile>
             </configuration>
@@ -179,7 +178,6 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-checkstyle-plugin</artifactId>
-            <version>${maven.checkstyle.plugin.version}</version>
             <configuration>
               <configLocation>google_checks.xml</configLocation>
               <consoleOutput>true</consoleOutput>
@@ -242,3 +240,5 @@
     </profile>
   </profiles>
 </project>
+
+
