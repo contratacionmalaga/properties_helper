@@ -4,11 +4,11 @@
   <parent>
     <groupId>local.jarios</groupId>
     <artifactId>jarios-parent</artifactId>
-    <version>1.0.9</version>
+    <version>1.0.12</version>
     <relativePath>../jarios-parent/pom.xml</relativePath>
   </parent>
   <artifactId>properties-helper</artifactId>
-  <version>6.0.3</version>
+  <version>6.0.4</version>
   <packaging>jar</packaging>
   <name>properties-helper</name>
   <description>Gestión avanzada de ficheros properties</description>
