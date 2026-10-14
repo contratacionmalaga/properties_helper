@@ -51,7 +51,7 @@ jobs:
 
       - name: Upload Dependency Check report
         if: always() && hashFiles('target/dependency-check-report.*') != ''
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: dependency-check-report
           path: target/dependency-check-report.*
